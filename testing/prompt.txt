@@ -1,0 +1,297 @@
+请识别并提取用户提供的票据信息。所提供的文件都是荣耀（honor）公司所收到的。票据可能包括发票、收据（小票）或其他类型的票据，文档中可能包含多张票据，且部分票据可能跨越多页。
+        
+    **输入形式：**
+    - 用户上传的文档可能是PDF文件或图片文件；
+    - 文档中可能存在排版混乱、印刷不清等情况，请尽可能准确识别关键信息。
+    
+    **你的任务：**
+    - 对输入的文档或图像进行理解，识别是否包含票据；
+    - 一页中可能包含一张或多张票据，请分别处理；
+    - 注意：部分票据可能跨越多页（如明细较多的发票或清单），在此类情形下，请在确认属于同一张票据的前提下，进行跨页信息合并，确保输出对象的完整性；如无法确认属于同一票据，则应分别处理。
+    - 每张票据请提取所需关键信息字段，并以结构化 JSON 格式输出。
+    
+    **注意事项：**
+    - 提取内容请保留票据原文中的语言，不进行翻译；
+    - 所有金额相关字段（如 totalAmount、totalNetAmount、totalTaxAmount）应为数字格式（例如：1234.56，而非字符串或带千位分隔符的格式），不要自行增加负数符号；
+    - 日期处理规则: 这是一个绝对规则，必须严格遵守。
+          1. **核心原则（硬性约束）**:
+            - **时效性下限**: 日期必须是 **2020 年 01 月 01 日之后**。任何解析结果若年份小于 2020，必须立即排除。
+            - **时效性上限**: 日期**绝不能超过 {current_utc_date} + 3 天**。任何超出此日期（未来的）组合，必须立即排除。
+            - **数据完整性**: 原始日期字符串的三个数字部分（A, B, C）不允许修改，只能改变顺序。
+
+          2. **歧义解决的强制步骤 (必须穷尽所有组合)**:
+            对于任何歧义日期（例如 '24/07/14', 即A=24,B=07,C=14），你**必须**在思维链中强制列出并检查以下所有两种基本格式的解析结果，**在列出时暂时不要考虑时效性，只专注于格式转换。**
+            
+            | 组合格式 | 解析结果 (YYYY-MM-DD) | 是否符合时效性? (下限 > 2020) | 是否符合时效性? (上限 < {current_utc_date} + 3天) |
+            | :--- | :--- | :--- | :--- |
+            | **1. A-B-C** | (转换 '24/07/14' 为 2024-07-14) | [是/否] | [是/否] |
+            | **2. C-B-A** | (转换 '24/07/14' 为 2014-07-24) | [是/否] | [是/否] |
+
+          3. **最终决策**:
+            a. **筛选**: 仅保留 **步骤 2** 中两项时效性检查都为“是”的组合。
+            b. **选择**: 从剩余的有效组合中，选择**距离 {current_utc_date} 时间差绝对值最小**的那一个日期作为最终结果。
+
+      4. **输出格式**: 最终所有日期字段都必须统一转换为 YYYY-MM-DD 格式输出。
+      5. **示例修正**: 对于日期 '24/07/14'，假设 {current_utc_date} 是 2025-12-17。
+         - 组合 A(YY-MM-DD): 2024-07-14。
+         - 组合 B(DD-MM-YY): 2014-07-24。 (**排除，小于 2020**)
+         - **最终决策**: 2024-07-14 是唯一符合所有约束的日期，因此必须选择它。
+
+    - 税率字段应以百分比字符串形式输出（例如："10%"）。
+    - 'docType'、'invoiceType'、'page' 和 'currency' 字段必须输出。
+    -currency字段的处理规则:
+        **提取逻辑（必须严格执行）：**
+          1. **优先寻找明确代码**：如果票面明确写有 "Currency: RM"、"SGD"、"USD" 等，直接转换。
+          2. **符号转换规则**：
+            - 看到 "RM" 或 "Ringgit"，必须转换为 **MYR**；
+            - 看到 "€"，转换为 **EUR**；
+            - 看到 "£"，转换为 **GBP**；
+            - 看到 "¥"，需区分是日元(JPY)还是人民币(CNY)；
+            - 看到 "R$"，转换为 **BRL**。
+          3. **解决 "$" 歧义**：如果票面只有 "$" 符号，**严禁直接默认为 USD**。必须检查 'billFromCountry' 或 'billToCountry'：
+            - 地址在新加坡 -> **SGD**
+            - 地址在澳大利亚 -> **AUD**
+            - 地址在加拿大 -> **CAD**
+            - 地址在香港 -> **HKD**
+            - 仅当地址在美国或明确提及 "US Dollar" 时，才输出 **USD**。
+          4. **禁止默认**：如果在票面上找不到任何货币符号或文字，可以通过地址所在国家的法定货币进行推断，但不要随意填充 USD。
+
+    - 对于其他字段，若无法在票据中找到明确对应的信息，请不要输出该字段，也不要进行补充、推断或填充 None。
+    - 税种简称映射：detailOfTaxSummary.taxCategory字段必须使用以下标准简称（如果识别的税种不在此列表中，则使用你识别出的税种名称）：{tax_categories_text}
+    - 必须全面提取票据上出现的所有税种信息，不漏掉任何一种税种
+    - 发票上可能同时存在多种不同的税种（如增值税、预扣税等），需要逐一识别并提取
+    - 注意识别加项税种（如VAT）和减项税种（如WHT、预扣税等）
+
+Response Schema:
+{
+  "title": "invoice_and_receipts",
+  "type": "ARRAY",
+  "items": {
+    "type": "OBJECT",
+    "properties": {
+      "docType": {
+        "type": "STRING",
+        "description": "将文档分类为以下三种类型之一：\n - invoice：正式的付款凭证，通常包含供应商和客户信息、发票号码、日期、税务信息（如增值税号）、付款条款、银行信息、商品或服务详情及总金额。\n   特别说明：以下类型均属于 invoice，即使名称中包含易混淆词汇，也必须优先归类为 invoice：\n   standard invoice、proforma invoice、credit note、debit note、請求書（日语 \"请求书\"）\n   quotation（报价单）：尽管名称为 \"报价单\"，但只要包含供应商 / 客户信息、商品 / 服务详情、金额等 invoice 核心要素，即属于 invoice\n 海关报关单、海关收款凭证：海关系统作为销方输出，代表公司与海关之间的付款凭证，属于invoice\n   receipt/tax invoice（收据 / 税务发票）：因包含税务信息（如增值税号），区别于普通 receipt，故属于 invoice\n - receipt：通常为较小金额的付款凭证，一般不包含详细税务信息，常见于零售交易、餐饮、交通等消费场景。\n - other：不符合 invoice 或 receipt 标准的文件，例如合同、订单确认书等。",
+        "enum": [
+          "invoice",
+          "receipt",
+          "other"
+        ]
+      },
+      "language": {
+        "type": "STRING",
+        "description": "根据文本的字符体系、词汇特征、语法结构，明确识别发票所用语言，若检测到发票中存在两种及以上不同语言，需全部列出用分号分割，不遗漏任一语种，若仅存在单一语言，则直接返回该语种名称。例如English、Japanese。"
+      },
+      "invoiceType": {
+        "type": "STRING",
+        "description": "发票类型，分为：\n - 'Commercial Invoice' (正式发票)：默认类型，若非 'Proforma Invoice' 或 'Credit Note'，则归为此类。\n - 'Proforma Invoice' (形式发票)：如果票面包含 \"PROFORMA\", \"PRO FORMA\", \"Záloha\", \"Facture d'Avance\", \"Prepayment\", \"Vorkassenrechnung\" 等关键词。\n - 'Credit Note' (贷项发票)：如果票面包含 \"AVOIR\", \"CREDIT\",\"ABONO\" 等关键词，或 totalAmount < 0。\n - 'Tax Invoice' (税务发票)：如果票面包含 \"'Tax Invoice\", \"Faktur Pajak\" 等关键词。\n 文件中可能包含多种不同类型的发票，并非单一类型。以印度尼西亚地区的发票为例，其常见形式为 “Commercial Invoice）” 与 “Tax Invoice” 共同存在（在不同页面分别记录），请务必完整识别这两类发票的内容，避免遗漏任一类型的关键信息。",
+        "enum": [
+          "Commercial Invoice",
+          "Proforma Invoice",
+          "Credit Note",
+          "Tax Invoice"
+        ]
+      },
+      "page": {
+        "type": "ARRAY",
+        "description": "所在文档中的页码列表（从1开始编号）。注意：若一张票据跨越多个页面，应将这些连续页码作为一个数组整体输出。例如：票据出现在第2至第4页时，输出为 [2, 3, 4]。",
+        "items": {
+          "type": "NUMBER"
+        }
+      },
+      "nameOfInvoice": {
+        "type": "STRING",
+        "description": "票面上的主要标题，如 'VAT Invoice'、'Debit Note'、'CREDIT' 等。"
+      },
+      "invoiceNumber": {
+        "type": "STRING",
+        "description": "发票号码 (查找 'Invoice No'、'No.'、'No' 、'Nomor'、'Kode dan Nomor Seri Faktur Pajak' 等标识)。"
+      },
+      "invoiceCode": {
+        "type": "STRING",
+        "description": "发票类型代码或发票序列号 (查找 'Serial'、'Ký hiệu'、'Ký hiệu(Serial)' 等标识)。"
+      },
+      "originalInvoiceNumber": {
+        "type": "STRING",
+        "description": "仅当 invoiceType 为 'Credit Note' 时提取，指贷项发票票头关联的原始发票号码。"
+      },
+      "invoiceDate": {
+        "type": "STRING",
+        "description": "发票发行日期，应注意结合上下文句意分辨是发票的发行日期还是产品的发行日期、生产日期或出口日期，优先选择发票的发行日期。若某个时间紧接在税务信息（如增值税号）或发票编号之后，则该时间为发票发行时间。"
+      },
+      "originalInvoiceDate": {
+        "type": "STRING",
+        "description": "仅当 invoiceType 为 'Credit Note' 时提取，指贷项发票票头关联的原始发票日期。"
+      },
+      "totalNetAmount": {
+        "type": "NUMBER",
+        "description": "不含税的总金额，常见为net Amount、Dasar Pengenaan Pajak等。"
+      },
+      "totalAmount": {
+        "type": "NUMBER",
+        "description": "含税总金额，常见为Ukupan iznos fakture、subTotal、total、รำกวนเรียนทั้งสิ้น、Vergiler Dahil Toplam Tutar等。"
+      },
+      "totalTaxAmount": {
+        "type": "NUMBER",
+        "description": "总税额，所有税额的合计（如Tax、Ukupan PDV等）。"
+      },
+      "currency": {
+        "type": "STRING",
+        "description": "币种，以ISO 4217货币代码形式输出 (如：USD, JPY, EUR)。"
+      },
+      "billToName": {
+        "type": "STRING",
+        "description": "收票方名称 (查找 'Bill To'、'MESSRS'、'Purchaser'、'Customer'、'Buyer'、'Attention to'、'Facturado a' 等标识)。特别说明：名称同时存在简写和详细名称两种形式时优先选择详细名称，不要包含人名。"
+      },
+      "billToComposite": {
+        "type": "STRING",
+        "description": "收票方的完整地址信息。"
+      },
+      "billToCountry": {
+        "type": "STRING",
+        "description": "收票方所在国家，根据收票方的完整地址提取。"
+      },
+      "billToTaxIdentificationNumber": {
+        "type": "STRING",
+        "description": "收票方的税务注册码（查找  'TIN'、'VAT Number'、'TAX#'、'VAT Registration'、'请求番号' 、TVA intracommunautaire、NPWP等标识）。"
+      },
+      "shipFromComposite": {
+        "type": "STRING",
+        "description": "发货地址。"
+      },
+      "billFromName": {
+        "type": "STRING",
+        "description": "开票方名称 (查找 'From'、'Account Name'、'Beneficiary Name'、'Seller'、'Remit to'，或从底部签名处、票面抬头获取)。特别说明：名称同时存在简写和详细名称两种形式时优先选择详细名称，不要包含人名。"
+      },
+      "billFromComposite": {
+        "type": "STRING",
+        "description": "开票方的完整地址信息。"
+      },
+      "billFromCountry": {
+        "type": "STRING",
+        "description": "开票方所在国家，根据开票方的地址信息提取。"
+      },
+      "billFromTaxIdentificationNumber": {
+        "type": "STRING",
+        "description": "开票方的纳税识别号 (查找  'TIN'、'VAT Number'、'TAX#'、'VAT Registration'、'请求番号' 、TVA intracommunautaire、NPWP等标识)。"
+      },
+      "purchaseOrderNumber": {
+        "type": "STRING",
+        "description": "客户采购订单号 (PO number、order no 、Customer's order No等)，注意不要取到Job No或Quotation No,当票面有Customer's order No时优先取该字段。"
+      },
+      "quotationNo": {
+        "type": "STRING",
+        "description": "报价单号，常见为Quotation No。"
+      },
+      "shipmentNumber": {
+        "type": "STRING",
+        "description": "运输单号 (如 Tracking Number、Tracking ID、Waybill Number)，从票头或参考信息中提取。"
+      },
+      "dueDate": {
+        "type": "STRING",
+        "description": "付款截止日期。"
+      },
+      "paymentDueInDays": {
+        "type": "STRING",
+        "description": "付款期限天数 (从付款条款/参考信息中获取)。"
+      },
+      "paymentReference": {
+        "type": "STRING",
+        "description": "付款参考（从Pay Ref、Payment Reference、Reference No、Ref No、Viitenro等提取）。"
+      },
+      "jobNo": {
+        "type": "STRING",
+        "description": "精确提取标识发票相关项目或工作订单的唯一编号字段，常见为Job No、Job Number等，字段值固定以/IMPORT结尾，不符合的不提取。"
+      },
+      "advancePayAmount": {
+        "type": "NUMBER",
+        "description": "预付款金额，常见为Less: Advance paid。"
+      },
+      "bussinessDate": {
+        "type": "STRING",
+        "description": "精确提取发票中标识商品/服务实际交付日期的字段，该日期触发纳税义务且独立于开票日期和付款截止日，常见为salesDate、Datum prometa等。"
+      },
+      "relatedCode": {
+        "type": "STRING",
+        "description": "文件中特定的编码，格式固定为TMS、VPC、AT、OM、OP、JL、EP、PO、HK开头，可能出现在表头或明细描述中"
+      },
+      "applicationNo": {
+        "type": "STRING",
+        "description": "文件中的申请编号，常见为Application No"
+      },
+      "documentDescription": {
+        "type": "STRING",
+        "description": "固定取头部的Description标识后的内容，注意不要取到明细数据"
+      },
+      "detailOfGoodsOrServices": {
+        "type": "ARRAY",
+        "description": "商品或服务明细列表，每个对象包含：如果商品或服务明细列表超过10行，则只需提取前十个。",
+        "items": {
+          "type": "OBJECT",
+          "properties": {
+            "articleName": {
+              "type": "STRING",
+              "description": "商品或服务名称（需要提取完整信息）"
+            },
+            "description": {
+              "type": "STRING",
+              "description": "备注"
+            },
+            "netAmount": {
+              "type": "NUMBER",
+              "description": "不含税金额"
+            },
+            "taxRate": {
+              "type": "STRING",
+              "description": "税率"
+            },
+            "tax": {
+              "type": "NUMBER",
+              "description": "税额"
+            },
+            "grossAmount": {
+              "type": "NUMBER",
+              "description": "含税金额"
+            },
+            "orderNumber": {
+              "type": "STRING",
+              "description": "订单号（注文番号）"
+            }
+          },
+          "required": []
+        }
+      },
+      "detailOfTaxSummary": {
+        "type": "ARRAY",
+        "description": "税金汇总列表，包括税种、税率、税基、税额。请注意，同一税种但不同税率的情况需要分别提取。",
+        "items": {
+          "type": "OBJECT",
+          "properties": {
+            "taxCategory": {
+              "type": "STRING",
+              "description": "税种简称。必须使用prompt中提供的标准税种简称（如'VAT'、'CIT'、'CT'等）。如果识别的税种不在标准列表中，则使用原始税种名称。"
+            },
+            "taxRate": {
+              "type": "STRING",
+              "description": "税率"
+            },
+            "netTaxableAmount": {
+              "type": "NUMBER",
+              "description": "税基（需计税的金额/不含税金额）"
+            },
+            "tax": {
+              "type": "NUMBER",
+              "description": "税额"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    "required": [
+      "docType",
+      "invoiceType",
+      "page"
+    ]
+  }
+}
