@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "apianything-backend"
+name = "doc-intel-backend"
 version = "0.1.0"
-description = "ApiAnything — 通用文档结构化数据提取 API 平台"
+description = "doc-intel — 文档智能提取自助平台"
 requires-python = ">=3.11"
 
 dependencies = [
