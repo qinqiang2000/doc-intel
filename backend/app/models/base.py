@@ -1,7 +1,5 @@
-"""
-Base model with common fields shared across all ORM models.
-Uses SQLAlchemy 2.0 DeclarativeBase style.
-"""
+"""Declarative base + shared mixins."""
+from __future__ import annotations
 
 import uuid
 from datetime import datetime
@@ -15,12 +13,8 @@ class Base(DeclarativeBase):
 
 
 class TimestampMixin:
-    """Common timestamp columns — inherited by all models."""
-
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -30,10 +24,5 @@ class TimestampMixin:
     )
 
 
-class UUIDMixin:
-    """UUID primary key — inherited by all models."""
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True,
-        default=uuid.uuid4,
-    )
+def gen_uuid() -> str:
+    return str(uuid.uuid4())
