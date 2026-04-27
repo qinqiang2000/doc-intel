@@ -1,68 +1,59 @@
-"""
-SQLAlchemy engine + session factory.
-
-原型阶段：SQLite（同步 Session）。
-生产迁移：只需替换 DATABASE_URL 为 postgresql://...，其余代码不变。
-"""
-
+"""Async SQLAlchemy engine + session factory + SQLite safety pragmas."""
 from __future__ import annotations
 
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import Session, sessionmaker
+import logging
+from collections.abc import AsyncGenerator
+
+from sqlalchemy import event
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import get_settings
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# ── Engine ────────────────────────────────────────────────────────────────────
-
-_connect_args: dict = {}
-if settings.DATABASE_URL.startswith("sqlite"):
-    # SQLite: 允许跨线程共享连接（FastAPI 多线程环境需要）
-    _connect_args["check_same_thread"] = False
-
-engine = create_engine(
+engine = create_async_engine(
     settings.DATABASE_URL,
-    connect_args=_connect_args,
-    # 生产 PostgreSQL 时建议设置连接池参数：
-    # pool_size=10, max_overflow=20, pool_pre_ping=True
-    echo=settings.DEBUG,
+    echo=settings.SQL_ECHO,
+    pool_pre_ping=True,
+    future=True,
 )
 
-# Enable WAL mode for SQLite to improve concurrent read performance
-if settings.DATABASE_URL.startswith("sqlite"):
-    @event.listens_for(engine, "connect")
-    def set_sqlite_pragma(dbapi_conn, _):
-        cursor = dbapi_conn.cursor()
+
+@event.listens_for(engine.sync_engine, "connect")
+def _set_sqlite_pragma(dbapi_conn, _connection_record) -> None:  # type: ignore[no-untyped-def]
+    """Apply SQLite safety pragmas on every new connection.
+
+    WAL gives concurrent readers + single writer with crash-safe checkpoints.
+    NORMAL synchronous + WAL is the community-recommended durable+fast combo.
+    foreign_keys must be explicitly enabled in SQLite (off by default).
+    busy_timeout makes occasional concurrent writes queue rather than fail.
+    """
+    if not settings.DATABASE_URL.startswith("sqlite"):
+        return
+    cursor = dbapi_conn.cursor()
+    try:
         cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA busy_timeout=5000")
+    finally:
         cursor.close()
 
 
-# ── Session Factory ───────────────────────────────────────────────────────────
-
-SessionLocal = sessionmaker(
-    bind=engine,
-    autocommit=False,
-    autoflush=False,
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
     expire_on_commit=False,
+    autoflush=False,
 )
 
 
-def get_db() -> Session:
-    """
-    FastAPI dependency: yields a DB session and ensures it is closed
-    even if the request handler raises an exception.
-    使用方：`db: Session = Depends(get_db)`
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def create_tables() -> None:
-    """Create all tables defined in ORM models (used in tests / startup)."""
-    from app.models import Base  # noqa: F401 — side-effect import registers metadata
-    Base.metadata.create_all(bind=engine)
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency that yields an AsyncSession and rolls back on error."""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
