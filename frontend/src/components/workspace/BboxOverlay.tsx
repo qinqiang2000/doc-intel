@@ -85,16 +85,87 @@ interface ResizeState {
   delta: { dx: number; dy: number };
 }
 
+interface RubberState {
+  origin: { x: number; y: number };
+  current: { x: number; y: number };
+}
+
+interface PendingCreate {
+  bbox: BoundingBox;
+}
+
 export default function BboxOverlay({
   pageNumber, pageRect, annotations, selectedAnnotationId, onSelect,
-  onPatchBbox,
-  onCreateBbox: _onCreateBbox,
+  onPatchBbox, onCreateBbox,
 }: Props) {
-  void pageNumber;
-  void _onCreateBbox;
   const [drag, setDrag] = useState<DragState | null>(null);
   const [resize, setResize] = useState<ResizeState | null>(null);
+  const [rubber, setRubber] = useState<RubberState | null>(null);
+  const [pending, setPending] = useState<PendingCreate | null>(null);
+  const [pendingName, setPendingName] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+
+  function handleRootPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.target !== e.currentTarget) return;
+    setRubber({
+      origin: { x: e.clientX, y: e.clientY },
+      current: { x: e.clientX, y: e.clientY },
+    });
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function handleRootPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!rubber) return;
+    setRubber({ ...rubber, current: { x: e.clientX, y: e.clientY } });
+  }
+
+  function handleRootPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (!rubber) return;
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    const ox = rubber.origin.x;
+    const oy = rubber.origin.y;
+    const cx = rubber.current.x;
+    const cy = rubber.current.y;
+    setRubber(null);
+    const xPx = Math.min(ox, cx);
+    const yPx = Math.min(oy, cy);
+    const wPx = Math.abs(cx - ox);
+    const hPx = Math.abs(cy - oy);
+    const areaFrac = (wPx / pageRect.width) * (hPx / pageRect.height);
+    if (areaFrac < 0.0005) return;
+    const bbox: BoundingBox = {
+      x: clamp(xPx / pageRect.width, 0, 1),
+      y: clamp(yPx / pageRect.height, 0, 1),
+      w: Math.min(wPx / pageRect.width, 1),
+      h: Math.min(hPx / pageRect.height, 1),
+      page: pageNumber - 1,
+    };
+    setPending({ bbox });
+    setPendingName("");
+  }
+
+  async function handleCreateConfirm() {
+    if (!pending) return;
+    const name = pendingName.trim();
+    if (!name) {
+      setPending(null);
+      setPendingName("");
+      return;
+    }
+    try {
+      await onCreateBbox(pending.bbox, name);
+    } catch (err) {
+      console.error("[BboxOverlay] create failed", err);
+    } finally {
+      setPending(null);
+      setPendingName("");
+    }
+  }
+
+  function handleCreateCancel() {
+    setPending(null);
+    setPendingName("");
+  }
 
   function handleBodyPointerDown(
     e: React.PointerEvent<HTMLButtonElement>,
@@ -194,11 +265,26 @@ export default function BboxOverlay({
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 pointer-events-none"
+      data-testid="bbox-overlay-root"
+      className="absolute inset-0 pointer-events-auto"
+      onPointerDown={handleRootPointerDown}
+      onPointerMove={handleRootPointerMove}
+      onPointerUp={handleRootPointerUp}
       onClick={(e) => {
         if (e.target === e.currentTarget) onSelect(null);
       }}
     >
+      {rubber && (
+        <div
+          className="absolute border-2 border-dashed border-[#6366f1] pointer-events-none"
+          style={{
+            left: Math.min(rubber.origin.x, rubber.current.x) - pageRect.left,
+            top: Math.min(rubber.origin.y, rubber.current.y) - pageRect.top,
+            width: Math.abs(rubber.current.x - rubber.origin.x),
+            height: Math.abs(rubber.current.y - rubber.origin.y),
+          }}
+        />
+      )}
       {annotations
         .filter((a) => a.bounding_box != null)
         .map((a) => {
@@ -266,6 +352,28 @@ export default function BboxOverlay({
             </button>
           );
         })}
+      {pending && (
+        <div
+          className="absolute bg-[#1a1d27] border border-[#6366f1] rounded p-1 pointer-events-auto"
+          style={{
+            left: `${pending.bbox.x * 100}%`,
+            top: `calc(${(pending.bbox.y + pending.bbox.h) * 100}% + 4px)`,
+          }}
+        >
+          <input
+            autoFocus
+            value={pendingName}
+            placeholder="字段名"
+            onChange={(e) => setPendingName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleCreateConfirm();
+              if (e.key === "Escape") handleCreateCancel();
+            }}
+            onBlur={handleCreateCancel}
+            className="bg-transparent text-sm text-white outline-none px-1"
+          />
+        </div>
+      )}
     </div>
   );
 }

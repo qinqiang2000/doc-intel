@@ -347,4 +347,58 @@ describe("BboxOverlay", () => {
     expect(sent.w).toBeGreaterThanOrEqual(0.005);
     expect(sent.h).toBeGreaterThanOrEqual(0.005);
   });
+
+  it("rubber-band drag on empty overlay area shows field-name input on pointer-up", async () => {
+    const onCreate = vi.fn().mockResolvedValue(undefined);
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[]}
+        selectedAnnotationId={null}
+        onSelect={vi.fn()}
+        onPatchBbox={vi.fn()}
+        onCreateBbox={onCreate}
+      />
+    );
+    const overlay = screen.getByTestId("bbox-overlay-root");
+    fireEvent.pointerDown(overlay, { clientX: 100, clientY: 100, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(overlay, { clientX: 300, clientY: 200, pointerId: 1 });
+    fireEvent.pointerUp(overlay,   { clientX: 300, clientY: 200, pointerId: 1 });
+
+    const input = await screen.findByPlaceholderText(/字段名/);
+    const user = userEvent.setup();
+    await user.type(input, "test_field{Enter}");
+
+    expect(onCreate).toHaveBeenCalledTimes(1);
+    const [bboxArg, name] = onCreate.mock.calls[0];
+    expect(name).toBe("test_field");
+    const sentBbox = bboxArg as BoundingBox_;
+    expect(sentBbox.x).toBeCloseTo(0.1, 2);
+    expect(sentBbox.w).toBeCloseTo(0.2, 2);
+    expect(sentBbox.page).toBe(0);
+  });
+
+  it("rubber-band smaller than 0.05% page area is cancelled silently", async () => {
+    const onCreate = vi.fn();
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[]}
+        selectedAnnotationId={null}
+        onSelect={vi.fn()}
+        onPatchBbox={vi.fn()}
+        onCreateBbox={onCreate}
+      />
+    );
+    const overlay = screen.getByTestId("bbox-overlay-root");
+    // 5px x 5px = 25px², way under 0.0005 * 1000 * 1400 = 700px²
+    fireEvent.pointerDown(overlay, { clientX: 100, clientY: 100, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(overlay, { clientX: 105, clientY: 105, pointerId: 1 });
+    fireEvent.pointerUp(overlay,   { clientX: 105, clientY: 105, pointerId: 1 });
+
+    expect(screen.queryByPlaceholderText(/字段名/)).not.toBeInTheDocument();
+    expect(onCreate).not.toHaveBeenCalled();
+  });
 });
