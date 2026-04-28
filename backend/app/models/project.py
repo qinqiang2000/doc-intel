@@ -44,7 +44,6 @@ class Project(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
-    # documents relationship added in T3 once Document model exists
-    # documents: Mapped[list["Document"]] = relationship(
-    #     back_populates="project", cascade="all, delete-orphan"
-    # )
+    documents: Mapped[list["Document"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
