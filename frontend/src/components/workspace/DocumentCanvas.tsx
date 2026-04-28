@@ -39,6 +39,8 @@ export default function DocumentCanvas({
               <Page pageNumber={i + 1} renderTextLayer={false} renderAnnotationLayer={false} />
             </div>
           ))}
+          {/* Single overlay rendered after all pages. S2b1 assumes page=0;
+              multi-page bbox positioning deferred to S2b2. */}
           {children}
         </Document>
       </div>
