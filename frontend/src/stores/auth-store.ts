@@ -35,6 +35,7 @@ interface AuthState {
   currentWorkspaceId: string | null;
   loading: boolean;
   error: string | null;
+  meLoaded: boolean;
 
   login: (email: string, password: string) => Promise<void>;
   register: (
@@ -56,6 +57,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   currentWorkspaceId: getCurrentWorkspaceId(),
   loading: false,
   error: null,
+  meLoaded: false,
 
   login: async (email, password) => {
     set({ loading: true, error: null });
@@ -104,6 +106,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: null,
       workspaces: [],
       currentWorkspaceId: null,
+      meLoaded: false,
     });
   },
 
@@ -130,6 +133,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (err.code !== "network_error") {
         get().logout();
       }
+    } finally {
+      set({ meLoaded: true });
     }
   },
 

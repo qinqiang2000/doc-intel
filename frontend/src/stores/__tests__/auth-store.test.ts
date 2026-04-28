@@ -44,6 +44,7 @@ beforeEach(() => {
     currentWorkspaceId: null,
     loading: false,
     error: null,
+    meLoaded: false,
   });
 });
 
@@ -212,6 +213,44 @@ describe("auth-store", () => {
       // its getter — for the lazy-init path see 'logout' test which directly
       // proves clearToken empties both.
       expect(useAuthStore.getState().token).toBeNull();
+    });
+  });
+
+  describe("meLoaded flag", () => {
+    it("starts false", () => {
+      // Reset already done in beforeEach
+      expect(useAuthStore.getState().meLoaded).toBe(false);
+    });
+
+    it("becomes true after successful refreshMe", async () => {
+      setToken("tok");
+      useAuthStore.setState({ token: "tok" });
+      mock.onGet("/api/v1/auth/me").reply(200, ME_RESP_TWO_WS);
+
+      await useAuthStore.getState().refreshMe();
+
+      expect(useAuthStore.getState().meLoaded).toBe(true);
+    });
+
+    it("becomes true even when refreshMe errors out", async () => {
+      setToken("expired-tok");
+      useAuthStore.setState({ token: "expired-tok" });
+      mock.onGet("/api/v1/auth/me").reply(401, {
+        error: { code: "unauthorized", message: "expired" },
+      });
+
+      await useAuthStore.getState().refreshMe();
+
+      expect(useAuthStore.getState().meLoaded).toBe(true);
+    });
+
+    it("logout resets meLoaded to false", () => {
+      setToken("tok");
+      useAuthStore.setState({ token: "tok", meLoaded: true });
+
+      useAuthStore.getState().logout();
+
+      expect(useAuthStore.getState().meLoaded).toBe(false);
     });
   });
 });

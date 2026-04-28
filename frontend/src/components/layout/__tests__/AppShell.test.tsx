@@ -52,6 +52,7 @@ beforeEach(() => {
       { id: "ws-1", name: "Demo", slug: "demo", role: "owner" },
     ],
     currentWorkspaceId: "ws-1",
+    meLoaded: true,
     switchWorkspaceBySlug: switchBySlugMock,
     logout: logoutMock,
   };
@@ -109,5 +110,25 @@ describe("AppShell", () => {
   it("calls switchWorkspaceBySlug when URL slug changes", () => {
     renderShell("/workspaces/demo");
     expect(switchBySlugMock).toHaveBeenCalledWith("demo");
+  });
+
+  it("does NOT redirect to /workspaces/new while meLoaded is false", () => {
+    mockState.workspaces = [];
+    mockState.currentWorkspaceId = null;
+    mockState.meLoaded = false;
+    renderShell();
+
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("redirects to /workspaces/new ONLY after meLoaded becomes true with empty workspaces", () => {
+    mockState.workspaces = [];
+    mockState.currentWorkspaceId = null;
+    mockState.meLoaded = true;
+    renderShell();
+
+    expect(navigateMock).toHaveBeenCalledWith("/workspaces/new", {
+      replace: true,
+    });
   });
 });

@@ -19,12 +19,14 @@ export default function AppShell() {
     }
   }, [params.slug, switchBySlug]);
 
-  // If user has zero workspaces, redirect to /workspaces/new
+  // If me has loaded and user has zero workspaces, redirect to /workspaces/new
+  // (Don't redirect during the initial loading window when refreshMe is still in flight.)
+  const meLoaded = useAuthStore((s) => s.meLoaded);
   useEffect(() => {
-    if (workspaces.length === 0) {
+    if (meLoaded && workspaces.length === 0) {
       navigate("/workspaces/new", { replace: true });
     }
-  }, [workspaces.length, navigate]);
+  }, [meLoaded, workspaces.length, navigate]);
 
   function onLogout() {
     logout();
