@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
     UPLOAD_DIR: str = "./data/uploads"
+    MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50 MB
 
     @field_validator("DATABASE_URL")
     @classmethod
