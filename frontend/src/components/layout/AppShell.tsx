@@ -42,7 +42,7 @@ export default function AppShell() {
           <span className="text-xl">⚡</span>
           <span className="font-bold tracking-tight">doc-intel</span>
           <span className="bg-[rgba(99,102,241,0.12)] text-[#94a3b8] text-[10px] px-2 py-0.5 rounded">
-            S0
+            S2b
           </span>
         </div>
 

@@ -1,8 +1,10 @@
 import MockAdapter from "axios-mock-adapter";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../lib/api-client";
+import { usePredictStore } from "../../stores/predict-store";
 
 const navigateMock = vi.fn();
 vi.mock("react-router-dom", async () => {
@@ -34,6 +36,7 @@ const docFixture = (id: string, name = `${id}.pdf`) => ({
 beforeEach(() => {
   mock = new MockAdapter(api);
   navigateMock.mockReset();
+  usePredictStore.setState({ results: {}, loading: {}, batchProgress: null, selectedAnnotationId: null });
 });
 
 afterEach(() => {
@@ -55,12 +58,22 @@ function renderPage(initialPath: string) {
 }
 
 describe("WorkspacePage", () => {
-  it("renders loading placeholder while bootstrapping", async () => {
-    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
-      items: [docFixture("d-1")], total: 1, page: 1, page_size: 1,
+  it("renders three-column layout once doc is fetched", async () => {
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1,
+      structured_data: { hello: "world" }, inferred_schema: { hello: "string" },
+      prompt_used: "p", processor_key: "mock|m", source: "predict",
+      created_by: "u-1", created_at: "",
     });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+
     renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
-    expect(screen.getByText(/Loading workspace|加载中/i)).toBeInTheDocument();
+    expect(await screen.findByText(/hello/)).toBeInTheDocument();
   });
 
   it("redirects to first document when ?doc= is missing", async () => {
@@ -93,6 +106,100 @@ describe("WorkspacePage", () => {
     expect(navigateMock).not.toHaveBeenCalledWith(
       expect.stringContaining("doc=d-other"),
       expect.anything()
+    );
+  });
+
+  it("loads annotations into B column", async () => {
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, [{
+      id: "a-1", document_id: "d-1", field_name: "invoice_no",
+      field_value: "INV-001", field_type: "string", bounding_box: null,
+      source: "ai_detected", confidence: null, is_ground_truth: false,
+      created_by: "u-1", updated_by_user_id: null,
+      created_at: "", updated_at: "",
+    }]);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1, structured_data: {},
+      inferred_schema: null, prompt_used: "", processor_key: "mock|m",
+      source: "predict", created_by: "u-1", created_at: "",
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    expect(await screen.findByDisplayValue("INV-001")).toBeInTheDocument();
+  });
+
+  it("auto-triggers predict when no cached result", async () => {
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1, structured_data: { ok: true },
+      inferred_schema: null, prompt_used: "", processor_key: "mock|m",
+      source: "predict", created_by: "u-1", created_at: "",
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    await waitFor(() =>
+      expect(mock.history.post.length).toBeGreaterThanOrEqual(1)
+    );
+  });
+
+  it("does NOT trigger predict when result already cached", async () => {
+    usePredictStore.setState({
+      results: {
+        "d-1": {
+          id: "pr-cached", document_id: "d-1", version: 5,
+          structured_data: { cached: true }, inferred_schema: null,
+          prompt_used: "", processor_key: "mock|m", source: "predict",
+          created_by: "u-1", created_at: "",
+        },
+      },
+    } as never);
+
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    await screen.findByText(/cached/);
+    expect(mock.history.post.length).toBe(0);
+  });
+
+  it("toolbar dropdown switches doc via URL navigation", async () => {
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1, structured_data: {},
+      inferred_schema: null, prompt_used: "", processor_key: "mock|m",
+      source: "predict", created_by: "u-1", created_at: "",
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [
+        docFixture("d-1", "alpha.pdf"),
+        docFixture("d-2", "beta.pdf"),
+      ], total: 2, page: 1, page_size: 20,
+    });
+    const user = userEvent.setup();
+
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    await screen.findByText(/alpha.pdf/);
+    await user.click(screen.getByRole("button", { name: /alpha.pdf/ }));
+    await user.click(screen.getByRole("button", { name: /beta.pdf/ }));
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith(
+        "/workspaces/demo/projects/p-1/workspace?doc=d-2"
+      )
     );
   });
 });
