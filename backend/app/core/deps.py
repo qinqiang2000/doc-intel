@@ -1,124 +1,62 @@
-"""
-FastAPI dependency injection providers.
-
-get_db           — yields a SQLAlchemy Session per request
-get_api_key_auth — authenticates X-API-Key header, returns ApiKey ORM object
-get_settings     — re-exported for convenience
-get_storage      — returns the configured StorageBackend singleton
-get_task_runner  — returns the configured TaskRunner singleton
-get_auth_provider — returns the configured AuthProvider singleton
-"""
-
+"""FastAPI dependencies: auth + DB + workspace membership."""
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, Header
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import Settings, get_settings
 from app.core.database import get_db
-from app.core.exceptions import AuthenticationError
-from app.core.security import verify_api_key
+from app.core.exceptions import AppError
+from app.core.security import decode_access_token
+from app.models.user import User
+from app.models.workspace_member import WorkspaceMember, WorkspaceRole
 
-# ── Re-export get_db so routes only need to import from deps ──────────────────
-__all__ = [
-    "get_db",
-    "get_settings",
-    "get_api_key_auth",
-    "get_storage",
-    "get_task_runner",
-    "get_auth_provider",
-    "DbSession",
-    "CurrentSettings",
-]
-
-DbSession = Annotated[Session, Depends(get_db)]
-CurrentSettings = Annotated[Settings, Depends(get_settings)]
+DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 
-# ── Abstraction layer factories ───────────────────────────────────────────────
-
-@lru_cache
-def get_storage():
-    """
-    Return a StorageBackend instance selected by STORAGE_BACKEND env var.
-
-    local (default) → LocalStorage(UPLOAD_DIR)
-    """
-    from app.abstractions.storage import LocalStorage, StorageBackend  # noqa: F401
-
-    s = get_settings()
-    if s.STORAGE_BACKEND == "local":
-        return LocalStorage(s.UPLOAD_DIR)
-    raise ValueError(f"Unsupported STORAGE_BACKEND: {s.STORAGE_BACKEND!r}")
-
-
-@lru_cache
-def get_task_runner():
-    """
-    Return a TaskRunner instance selected by TASK_RUNNER env var.
-
-    sync (default) → SyncRunner
-    """
-    from app.abstractions.task_runner import SyncRunner, TaskRunner  # noqa: F401
-
-    s = get_settings()
-    if s.TASK_RUNNER == "sync":
-        return SyncRunner()
-    raise ValueError(f"Unsupported TASK_RUNNER: {s.TASK_RUNNER!r}")
+async def get_current_user(
+    db: DbSession,
+    authorization: Annotated[str | None, Header()] = None,
+) -> User:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise AppError(401, "unauthorized", "Missing or malformed Authorization header.")
+    token = authorization.removeprefix("Bearer ").strip()
+    payload = decode_access_token(token)
+    if payload is None:
+        raise AppError(401, "unauthorized", "Invalid or expired token.")
+    user_id = payload.get("sub")
+    if not user_id:
+        raise AppError(401, "unauthorized", "Token payload missing subject.")
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if user is None or not user.is_active:
+        raise AppError(401, "unauthorized", "User not found or inactive.")
+    return user
 
 
-@lru_cache
-def get_auth_provider():
-    """
-    Return an AuthProvider instance (currently only SimpleApiKeyAuth).
-
-    Selecting via config is reserved for future OAuth / JWT implementations.
-    """
-    from app.abstractions.auth import SimpleApiKeyAuth
-
-    return SimpleApiKeyAuth()
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-async def get_api_key_auth(
-    x_api_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
-    db: Session = Depends(get_db),
-):
-    """
-    Authenticate a public API request via X-API-Key header.
+async def get_workspace_membership(
+    workspace_id: str,
+    db: DbSession,
+    user: CurrentUser,
+) -> WorkspaceMember:
+    """Return the user's membership in the workspace; 403 if not a member."""
+    stmt = select(WorkspaceMember).where(
+        WorkspaceMember.workspace_id == workspace_id,
+        WorkspaceMember.user_id == user.id,
+    )
+    member = (await db.execute(stmt)).scalar_one_or_none()
+    if member is None:
+        raise AppError(403, "forbidden", "You are not a member of this workspace.")
+    return member
 
-    Returns the ApiKey ORM object if valid, raises AuthenticationError otherwise.
-    Also validates is_active and expiry.
-    """
-    from datetime import datetime, timezone
 
-    from app.models.api_key import ApiKey
-
-    if not x_api_key:
-        raise AuthenticationError("X-API-Key header is required")
-
-    # Fetch all active keys and compare hashes (small table in prototype)
-    # Production: index on key_hash for O(1) lookup
-    keys = db.query(ApiKey).filter(ApiKey.is_active == True).all()  # noqa: E712
-    matched: ApiKey | None = None
-    for key in keys:
-        if verify_api_key(x_api_key, key.key_hash):
-            matched = key
-            break
-
-    if matched is None:
-        raise AuthenticationError("Invalid or revoked API key")
-
-    if matched.expires_at and matched.expires_at < datetime.now(timezone.utc):
-        raise AuthenticationError("API key has expired")
-
-    # Update last_used_at (best-effort, non-blocking)
-    try:
-        matched.last_used_at = datetime.now(timezone.utc)
-        db.commit()
-    except Exception:
-        db.rollback()
-
-    return matched
+async def require_workspace_owner(
+    membership: Annotated[WorkspaceMember, Depends(get_workspace_membership)],
+) -> WorkspaceMember:
+    if membership.role != WorkspaceRole.OWNER:
+        raise AppError(403, "forbidden", "Workspace owner role required.")
+    return membership

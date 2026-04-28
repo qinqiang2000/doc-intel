@@ -1,97 +1,41 @@
-"""
-Application exception hierarchy and FastAPI exception handlers.
-"""
-
+"""Unified error response format and exception handlers."""
 from __future__ import annotations
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.requests import Request
 
 
-class AppError(Exception):
-    """Base class for all application errors."""
+class AppError(HTTPException):
+    """Domain error with stable error code for client handling."""
 
-    status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR
-    error_code: str = "internal_error"
-
-    def __init__(self, message: str, details: dict | None = None):
-        super().__init__(message)
+    def __init__(self, status_code: int, code: str, message: str) -> None:
+        super().__init__(status_code=status_code, detail={"code": code, "message": message})
+        self.code = code
         self.message = message
-        self.details = details
 
 
-class NotFoundError(AppError):
-    status_code = status.HTTP_404_NOT_FOUND
-    error_code = "not_found"
+def _error_response(status: int, code: str, message: str) -> JSONResponse:
+    return JSONResponse(status_code=status, content={"error": {"code": code, "message": message}})
 
 
-class ConflictError(AppError):
-    status_code = status.HTTP_409_CONFLICT
-    error_code = "conflict"
+async def _app_error_handler(_: Request, exc: AppError) -> JSONResponse:
+    return _error_response(exc.status_code, exc.code, exc.message)
 
 
-class ValidationError(AppError):
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-    error_code = "validation_error"
+async def _http_error_handler(_: Request, exc: HTTPException) -> JSONResponse:
+    detail = exc.detail
+    if isinstance(detail, dict) and "code" in detail:
+        return _error_response(exc.status_code, detail["code"], detail.get("message", ""))
+    return _error_response(exc.status_code, "http_error", str(detail))
 
 
-class AuthenticationError(AppError):
-    status_code = status.HTTP_401_UNAUTHORIZED
-    error_code = "invalid_api_key"
-
-
-class AuthorizationError(AppError):
-    status_code = status.HTTP_403_FORBIDDEN
-    error_code = "insufficient_scope"
-
-
-class FileTooLargeError(AppError):
-    status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
-    error_code = "file_too_large"
-
-
-class UnsupportedFileTypeError(AppError):
-    status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
-    error_code = "unsupported_file_type"
-
-
-class ProcessingError(AppError):
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-    error_code = "processing_error"
-
-
-class ApiDeprecatedError(AppError):
-    status_code = status.HTTP_410_GONE
-    error_code = "api_deprecated"
-
-
-class RateLimitError(AppError):
-    status_code = status.HTTP_429_TOO_MANY_REQUESTS
-    error_code = "rate_limit_exceeded"
-
-
-class QuotaExceededError(AppError):
-    status_code = status.HTTP_429_TOO_MANY_REQUESTS
-    error_code = "quota_exceeded"
-
-
-# ── FastAPI handler ───────────────────────────────────────────────────────────
-
-def _error_body(exc: AppError) -> dict:
-    return {
-        "error": {
-            "code": exc.error_code,
-            "message": exc.message,
-            "details": exc.details,
-        }
-    }
+async def _validation_error_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+    return _error_response(422, "validation_error", str(exc.errors()))
 
 
 def register_exception_handlers(app: FastAPI) -> None:
-    @app.exception_handler(AppError)
-    async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
-        return JSONResponse(status_code=exc.status_code, content=_error_body(exc))
-
-    @app.exception_handler(NotFoundError)
-    async def not_found_handler(request: Request, exc: NotFoundError) -> JSONResponse:
-        return JSONResponse(status_code=exc.status_code, content=_error_body(exc))
+    app.add_exception_handler(AppError, _app_error_handler)
+    app.add_exception_handler(HTTPException, _http_error_handler)
+    app.add_exception_handler(RequestValidationError, _validation_error_handler)
