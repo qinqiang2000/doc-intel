@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
+import ProjectListPage from "./pages/ProjectListPage";
 import WorkspaceCreatePage from "./pages/WorkspaceCreatePage";
 import WorkspaceSettingsPage from "./pages/WorkspaceSettingsPage";
 import { useAuthStore } from "./stores/auth-store";
@@ -43,9 +43,9 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<ProjectListPage />} />
           <Route path="/workspaces/new" element={<WorkspaceCreatePage />} />
-          <Route path="/workspaces/:slug" element={<DashboardPage />} />
+          <Route path="/workspaces/:slug" element={<ProjectListPage />} />
           <Route
             path="/workspaces/:slug/settings"
             element={<WorkspaceSettingsPage />}

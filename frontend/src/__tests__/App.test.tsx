@@ -14,8 +14,8 @@ vi.mock("../pages/auth/LoginPage", () => ({
 vi.mock("../pages/auth/RegisterPage", () => ({
   default: () => <div data-testid="page-register">register</div>,
 }));
-vi.mock("../pages/DashboardPage", () => ({
-  default: () => <div data-testid="page-dashboard">dashboard</div>,
+vi.mock("../pages/ProjectListPage", () => ({
+  default: () => <div data-testid="page-projects">project-list</div>,
 }));
 vi.mock("../pages/WorkspaceCreatePage", () => ({
   default: () => <div data-testid="page-ws-create">ws-create</div>,
@@ -59,7 +59,7 @@ describe("App routing", () => {
     mockState.token = "tok";
     window.history.pushState({}, "", "/");
     render(<App />);
-    expect(screen.getByTestId("page-dashboard")).toBeInTheDocument();
+    expect(screen.getByTestId("page-projects")).toBeInTheDocument();
   });
 
   it("/login renders LoginPage without auth", () => {
@@ -79,7 +79,7 @@ describe("App routing", () => {
     window.history.pushState({}, "", "/dashboard");
     render(<App />);
     expect(screen.getByTestId("app-shell")).toBeInTheDocument();
-    expect(screen.getByTestId("page-dashboard")).toBeInTheDocument();
+    expect(screen.getByTestId("page-projects")).toBeInTheDocument();
   });
 
   it("calls refreshMe on mount when token exists", () => {
