@@ -23,7 +23,14 @@ const ANN = {
 
 beforeEach(() => {
   mock = new MockAdapter(api);
-  usePredictStore.setState({ loading: {}, results: {}, batchProgress: null });
+  usePredictStore.setState({
+    loading: {}, results: {}, batchProgress: null,
+    selectedAnnotationId: null,
+    currentStep: 0,
+    apiFormat: "flat",
+    processorOverride: "",
+    promptOverride: "",
+  });
 });
 
 afterEach(() => mock.restore());
@@ -96,5 +103,34 @@ describe("predict-store", () => {
     });
     const r = await usePredictStore.getState().loadNextUnreviewed("p-1");
     expect(r).toBeNull();
+  });
+
+  describe("workspace state (S2b1 additions)", () => {
+    it("setSelectedAnnotationId updates state", () => {
+      usePredictStore.getState().setSelectedAnnotationId("a-1");
+      expect(usePredictStore.getState().selectedAnnotationId).toBe("a-1");
+      usePredictStore.getState().setSelectedAnnotationId(null);
+      expect(usePredictStore.getState().selectedAnnotationId).toBeNull();
+    });
+
+    it("setStep updates currentStep", () => {
+      usePredictStore.getState().setStep(2);
+      expect(usePredictStore.getState().currentStep).toBe(2);
+    });
+
+    it("setApiFormat updates apiFormat", () => {
+      usePredictStore.getState().setApiFormat("detailed");
+      expect(usePredictStore.getState().apiFormat).toBe("detailed");
+    });
+
+    it("setProcessorOverride updates processorOverride", () => {
+      usePredictStore.getState().setProcessorOverride("openai|gpt-4o");
+      expect(usePredictStore.getState().processorOverride).toBe("openai|gpt-4o");
+    });
+
+    it("setPromptOverride updates promptOverride", () => {
+      usePredictStore.getState().setPromptOverride("custom prompt");
+      expect(usePredictStore.getState().promptOverride).toBe("custom prompt");
+    });
   });
 });

@@ -71,6 +71,16 @@ interface PredictState {
   loading: Record<string, boolean>;
   results: Record<string, ProcessingResult>;
   batchProgress: BatchProgress | null;
+  selectedAnnotationId: string | null;
+  currentStep: 0 | 1 | 2 | 3;
+  apiFormat: "flat" | "detailed" | "grouped";
+  processorOverride: string;
+  promptOverride: string;
+  setSelectedAnnotationId: (id: string | null) => void;
+  setStep: (step: 0 | 1 | 2 | 3) => void;
+  setApiFormat: (f: "flat" | "detailed" | "grouped") => void;
+  setProcessorOverride: (s: string) => void;
+  setPromptOverride: (s: string) => void;
 
   predictSingle: (
     projectId: string, documentId: string, opts?: PredictOptions
@@ -91,6 +101,17 @@ export const usePredictStore = create<PredictState>((set, get) => ({
   loading: {},
   results: {},
   batchProgress: null,
+  selectedAnnotationId: null,
+  currentStep: 0,
+  apiFormat: "flat",
+  processorOverride: "",
+  promptOverride: "",
+
+  setSelectedAnnotationId: (id) => set({ selectedAnnotationId: id }),
+  setStep: (step) => set({ currentStep: step }),
+  setApiFormat: (f) => set({ apiFormat: f }),
+  setProcessorOverride: (s) => set({ processorOverride: s }),
+  setPromptOverride: (s) => set({ promptOverride: s }),
 
   predictSingle: async (projectId, documentId, opts) => {
     set((s) => ({ loading: { ...s.loading, [documentId]: true } }));
