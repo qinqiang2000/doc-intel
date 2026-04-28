@@ -1,4 +1,4 @@
-import { useRef, useState, ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { api, extractApiError } from "../../lib/api-client";
 
 const MAX_BYTES = 50 * 1024 * 1024;

@@ -7,6 +7,16 @@ vi.mock("../stores/auth-store", () => ({
   useAuthStore: (selector: (s: any) => unknown) => selector(mockState),
 }));
 
+vi.mock("../pages/ProjectCreatePage", () => ({
+  default: () => <div data-testid="page-project-create">project-create</div>,
+}));
+vi.mock("../pages/ProjectDocumentsPage", () => ({
+  default: () => <div data-testid="page-project-documents">project-documents</div>,
+}));
+vi.mock("../pages/ProjectSettingsPage", () => ({
+  default: () => <div data-testid="page-project-settings">project-settings</div>,
+}));
+
 // Stub each route's page so we don't bring in their full deps
 vi.mock("../pages/auth/LoginPage", () => ({
   default: () => <div data-testid="page-login">login</div>,
@@ -87,5 +97,26 @@ describe("App routing", () => {
     window.history.pushState({}, "", "/dashboard");
     render(<App />);
     expect(refreshMeMock).toHaveBeenCalled();
+  });
+
+  it("/workspaces/:slug/projects/new renders ProjectCreatePage when authed", () => {
+    mockState.token = "tok";
+    window.history.pushState({}, "", "/workspaces/demo/projects/new");
+    render(<App />);
+    expect(screen.getByTestId("page-project-create")).toBeInTheDocument();
+  });
+
+  it("/workspaces/:slug/projects/:pid renders ProjectDocumentsPage when authed", () => {
+    mockState.token = "tok";
+    window.history.pushState({}, "", "/workspaces/demo/projects/p-1");
+    render(<App />);
+    expect(screen.getByTestId("page-project-documents")).toBeInTheDocument();
+  });
+
+  it("/workspaces/:slug/projects/:pid/settings renders ProjectSettingsPage when authed", () => {
+    mockState.token = "tok";
+    window.history.pushState({}, "", "/workspaces/demo/projects/p-1/settings");
+    render(<App />);
+    expect(screen.getByTestId("page-project-settings")).toBeInTheDocument();
   });
 });

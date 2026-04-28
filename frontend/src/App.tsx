@@ -3,7 +3,10 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import ProjectCreatePage from "./pages/ProjectCreatePage";
+import ProjectDocumentsPage from "./pages/ProjectDocumentsPage";
 import ProjectListPage from "./pages/ProjectListPage";
+import ProjectSettingsPage from "./pages/ProjectSettingsPage";
 import WorkspaceCreatePage from "./pages/WorkspaceCreatePage";
 import WorkspaceSettingsPage from "./pages/WorkspaceSettingsPage";
 import { useAuthStore } from "./stores/auth-store";
@@ -50,6 +53,9 @@ export default function App() {
             path="/workspaces/:slug/settings"
             element={<WorkspaceSettingsPage />}
           />
+          <Route path="/workspaces/:slug/projects/new" element={<ProjectCreatePage />} />
+          <Route path="/workspaces/:slug/projects/:pid" element={<ProjectDocumentsPage />} />
+          <Route path="/workspaces/:slug/projects/:pid/settings" element={<ProjectSettingsPage />} />
         </Route>
 
         <Route path="*" element={<RootRedirect />} />
