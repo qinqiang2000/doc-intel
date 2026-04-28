@@ -246,4 +246,105 @@ describe("BboxOverlay", () => {
     const sent = onPatch.mock.calls[0][1] as BoundingBox_;
     expect(sent.page).toBe(1);
   });
+
+  it("dragging SE handle increases w and h on pointer-up", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[ann("a-1", { bounding_box: { x: 0.1, y: 0.1, w: 0.2, h: 0.05, page: 0 } })]}
+        selectedAnnotationId="a-1"
+        onSelect={vi.fn()}
+        onPatchBbox={onPatch}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    const handle = screen.getByTestId("bbox-handle-a-1-se");
+    fireEvent.pointerDown(handle, { clientX: 300, clientY: 210, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(handle, { clientX: 400, clientY: 280, pointerId: 1 });
+    fireEvent.pointerUp(handle,   { clientX: 400, clientY: 280, pointerId: 1 });
+
+    // dx=100/1000=0.1; dy=70/1400=0.05
+    const sent = onPatch.mock.calls[0][1] as BoundingBox_;
+    expect(sent.x).toBeCloseTo(0.1, 3);
+    expect(sent.y).toBeCloseTo(0.1, 3);
+    expect(sent.w).toBeCloseTo(0.3, 3);
+    expect(sent.h).toBeCloseTo(0.1, 3);
+  });
+
+  it("dragging NW handle moves x/y and grows w/h", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[ann("a-1", { bounding_box: { x: 0.5, y: 0.5, w: 0.2, h: 0.1, page: 0 } })]}
+        selectedAnnotationId="a-1"
+        onSelect={vi.fn()}
+        onPatchBbox={onPatch}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    const handle = screen.getByTestId("bbox-handle-a-1-nw");
+    fireEvent.pointerDown(handle, { clientX: 500, clientY: 700, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(handle, { clientX: 400, clientY: 560, pointerId: 1 });
+    fireEvent.pointerUp(handle,   { clientX: 400, clientY: 560, pointerId: 1 });
+
+    // dx=-100/1000=-0.1, dy=-140/1400=-0.1
+    const sent = onPatch.mock.calls[0][1] as BoundingBox_;
+    expect(sent.x).toBeCloseTo(0.4, 3);
+    expect(sent.y).toBeCloseTo(0.4, 3);
+    expect(sent.w).toBeCloseTo(0.3, 3);
+    expect(sent.h).toBeCloseTo(0.2, 3);
+  });
+
+  it("E side handle changes w only", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[ann("a-1", { bounding_box: { x: 0.1, y: 0.1, w: 0.2, h: 0.05, page: 0 } })]}
+        selectedAnnotationId="a-1"
+        onSelect={vi.fn()}
+        onPatchBbox={onPatch}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    const handle = screen.getByTestId("bbox-handle-a-1-e");
+    fireEvent.pointerDown(handle, { clientX: 300, clientY: 175, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(handle, { clientX: 400, clientY: 175, pointerId: 1 });
+    fireEvent.pointerUp(handle,   { clientX: 400, clientY: 175, pointerId: 1 });
+
+    const sent = onPatch.mock.calls[0][1] as BoundingBox_;
+    expect(sent.x).toBeCloseTo(0.1, 3);
+    expect(sent.y).toBeCloseTo(0.1, 3);
+    expect(sent.w).toBeCloseTo(0.3, 3);
+    expect(sent.h).toBeCloseTo(0.05, 3);
+  });
+
+  it("clamps minimum size to 0.005 fraction (no zero-or-negative)", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[ann("a-1", { bounding_box: { x: 0.1, y: 0.1, w: 0.2, h: 0.05, page: 0 } })]}
+        selectedAnnotationId="a-1"
+        onSelect={vi.fn()}
+        onPatchBbox={onPatch}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    // Drag SE handle inward more than the box's size
+    const handle = screen.getByTestId("bbox-handle-a-1-se");
+    fireEvent.pointerDown(handle, { clientX: 300, clientY: 210, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(handle, { clientX:  50, clientY:  50, pointerId: 1 });
+    fireEvent.pointerUp(handle,   { clientX:  50, clientY:  50, pointerId: 1 });
+
+    const sent = onPatch.mock.calls[0][1] as BoundingBox_;
+    expect(sent.w).toBeGreaterThanOrEqual(0.005);
+    expect(sent.h).toBeGreaterThanOrEqual(0.005);
+  });
 });
