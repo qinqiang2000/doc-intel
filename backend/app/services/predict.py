@@ -132,3 +132,92 @@ async def _replace_ai_annotations(
         )
         db.add(a)
     await db.flush()
+
+
+from app.engine.processors.factory import DocumentProcessorFactory
+from app.models.document import Document
+from app.models.processing_result import ProcessingResult, ProcessingResultSource
+from app.models.project import Project
+from app.models.user import User
+from app.services import storage
+
+
+class PredictError(RuntimeError):
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+async def predict_single(
+    db: AsyncSession,
+    *,
+    document: Document,
+    project: Project,
+    user: User,
+    prompt_override: str | None = None,
+    processor_key_override: str | None = None,
+) -> ProcessingResult:
+    # 1. Resolve processor_key
+    if processor_key_override:
+        processor_key = processor_key_override
+    else:
+        tpl = get_template(project.template_key) if project.template_key else None
+        processor_key = tpl.recommended_processor if tpl else "gemini"
+
+    # 2. Create processor
+    parts = processor_key.split("|", 1)
+    p_type = parts[0]
+    p_kwargs: dict[str, Any] = {"model_name": parts[1]} if len(parts) == 2 else {}
+    available = set(DocumentProcessorFactory.get_available())
+    if p_type not in available:
+        raise PredictError(
+            "processor_not_available",
+            f"Processor '{p_type}' is not available. Available: {sorted(available)}",
+        )
+    try:
+        processor = DocumentProcessorFactory.create(p_type, **p_kwargs)
+    except (ValueError, RuntimeError) as e:
+        raise PredictError("processor_not_available", str(e))
+
+    # Record final processor_key (with model name resolved by factory if any)
+    final_processor_key = processor_key
+    if "|" not in processor_key and hasattr(processor, "model_name"):
+        final_processor_key = f"{p_type}|{processor.model_name}"
+
+    # 3. Resolve prompt
+    prompt = prompt_override or build_default_prompt(project.template_key)
+
+    # 4. Call engine
+    file_path = str(storage.absolute_path(document.file_path))
+    try:
+        raw = await processor.process_document(file_path, prompt)
+    except Exception as e:
+        logger.exception("predict_single processor failed for doc %s", document.id)
+        raise PredictError("predict_failed", f"Engine error: {e}")
+
+    # 5. Parse
+    structured = _parse_llm_output(raw)
+    schema = _infer_schema(structured)
+
+    # 6. Write ProcessingResult (version recompute inside transaction)
+    next_version = await _next_version(db, document.id)
+    pr = ProcessingResult(
+        document_id=document.id,
+        version=next_version,
+        structured_data=structured,
+        inferred_schema=schema,
+        prompt_used=prompt,
+        processor_key=final_processor_key,
+        source=ProcessingResultSource.PREDICT,
+        created_by=user.id,
+    )
+    db.add(pr)
+    await db.flush()
+
+    # 7. Replace AI annotations
+    await _replace_ai_annotations(db, document.id, structured, user.id)
+
+    await db.commit()
+    await db.refresh(pr)
+    return pr
