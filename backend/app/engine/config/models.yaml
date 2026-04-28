@@ -1,0 +1,111 @@
+# 文档处理器模型配置
+# 这个文件定义了所有支持的AI模型处理器及其配置
+
+# 全局默认设置
+defaults:
+  processor: "gemini"           # 默认使用的处理器类型
+
+# 处理器配置
+processors:
+
+  # Google Gemini 处理器
+  gemini:
+    type: "gemini"
+    name: "Google Gemini"
+    description: "Google's Gemini AI models for document understanding"
+    enabled: true
+    default_model: "gemini-2.5-flash"
+
+    # 环境变量映射
+    env_vars:
+      api_key: "API_KEY"                    # Gemini API密钥
+      model_override: "GEMINI_MODEL"        # 可通过环境变量覆盖默认模型
+      temperature: "GEMINI_TEMPERATURE"     # 温度参数
+      max_output_tokens: "GEMINI_MAX_OUTPUT_TOKENS"
+
+    # 支持的模型列表
+    models:
+      gemini-2.5-flash:
+        name: "gemini-2.5-flash"
+        description: "Gemini-2.5-Flash(tested, recommended)"
+
+      gemini-3-flash-preview:
+        name: "gemini-3-flash-preview"
+        description: "Points to gemini-3-flash-preview"
+
+  # OpenAI 处理器
+  openai:
+    type: "openai"
+    name: "OpenAI"
+    description: "OpenAI's GPT models for document understanding"
+    enabled: true
+    default_model: "gpt-5-mini"
+
+    # 环境变量映射
+    env_vars:
+      api_key: "OPENAI_API_KEY"           # OpenAI API密钥
+      model_override: "OPENAI_MODEL"      # 可通过环境变量覆盖默认模型
+
+    # 支持的模型列表
+    models:
+      gpt-5-mini:
+        name: "gpt-5-mini"
+        description: "OpenAI gpt-5-mini (fastest and cheapest)"
+
+      # gpt-4.1:
+      #   name: "gpt-4.1"
+      #   description: "OpenAI GPT-4.1 (Stable)"
+
+  # PiaoZone 处理器
+  piaozone:
+    type: "piaozone"
+    name: "PiaoZone"
+    description: "PiaoZone AI API for document understanding"
+    enabled: true
+    default_model: "gemini-2.5-flash"
+
+    # 环境变量映射
+    env_vars:
+      # Token相关配置（两种方式）
+      # 方式1：静态token（向后兼容）
+      access_token: "PIAOZONE_ACCESS_TOKEN"     # PiaoZone Access Token (静态)
+
+      # 方式2：动态token获取（推荐）
+      client_id: "PIAOZONE_CLIENT_ID"           # PiaoZone Client ID
+      client_secret: "PIAOZONE_CLIENT_SECRET"   # PiaoZone Client Secret
+      token_url: "PIAOZONE_TOKEN_URL"           # Token获取URL
+      token_duration_hours: "PIAOZONE_TOKEN_DURATION_HOURS"  # Token有效期（小时）
+
+      # API配置
+      api_url: "PIAOZONE_API_URL"               # PiaoZone API URL
+      model_override: "PIAOZONE_MODEL"          # 可通过环境变量覆盖默认模型
+
+      # 模型参数配置
+      temperature: "PIAOZONE_TEMPERATURE"       # 温度参数
+      max_output_tokens: "PIAOZONE_MAX_OUTPUT_TOKENS"  # 最大输出token数
+      top_p: "PIAOZONE_TOP_P"                   # Top-p采样
+      top_k: "PIAOZONE_TOP_K"                   # Top-k采样
+      seed: "PIAOZONE_SEED"                     # 随机种子
+      response_mime_type: "PIAOZONE_RESPONSE_MIME_TYPE"  # 响应MIME类型
+      thinking_budget: "PIAOZONE_THINKING_BUDGET"  # 深度思考预算
+
+    # 支持的模型列表
+    models:
+      gemini-2.5-flash:
+        name: "gemini-2.5-flash"
+        description: "Gemini-2.5-flash via PiaoZone API"
+
+  # Mock 处理器 (用于测试)
+  mock:
+    type: "mock"
+    name: "Mock Processor"
+    description: "Mock processor for testing and development"
+    enabled: true
+    default_model: "mock-v1.0"
+
+    env_vars: {}  # Mock处理器不需要API密钥
+
+    models:
+      mock-v1.0:
+        name: "mock-v1.0"
+        description: "Mock processor for testing (returns dummy data)"
