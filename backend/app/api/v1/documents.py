@@ -9,6 +9,8 @@ from starlette.responses import FileResponse
 from app.core.config import get_settings
 from app.core.deps import CurrentUser, DbSession
 from app.core.exceptions import AppError
+from app.models.document import Document
+from app.models.processing_result import ProcessingResult
 from app.models.project import Project
 from app.models.workspace_member import WorkspaceMember
 from app.schemas.document import DocumentList, DocumentRead, DocumentUpdate
@@ -95,6 +97,32 @@ async def list_(
         page=page,
         page_size=page_size,
     )
+
+
+@router.get("/next-unreviewed", response_model=DocumentRead)
+async def next_unreviewed(
+    project_id: str,
+    db: DbSession,
+    user: CurrentUser,
+) -> DocumentRead:
+    """Return the first document in the project that has no ProcessingResult yet."""
+    await _check_project_access(db, project_id, user.id)
+
+    predicted_ids = select(ProcessingResult.document_id).distinct()
+    stmt = (
+        select(Document)
+        .where(
+            Document.project_id == project_id,
+            Document.deleted_at.is_(None),
+            Document.id.notin_(predicted_ids),
+        )
+        .order_by(Document.created_at)
+        .limit(1)
+    )
+    doc = (await db.execute(stmt)).scalar_one_or_none()
+    if doc is None:
+        raise AppError(404, "no_unreviewed_documents", "All documents have been predicted at least once.")
+    return DocumentRead.model_validate(doc)
 
 
 @router.get("/{document_id}", response_model=DocumentRead)
