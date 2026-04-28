@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance } from "axios";
+import axios, { AxiosError, type AxiosInstance } from "axios";
 import { clearToken, getToken } from "./auth-storage";
 
 const BASE_URL =

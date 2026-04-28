@@ -2,7 +2,6 @@ import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { api } from "../../lib/api-client";
 import {
-  clearToken,
   getCurrentWorkspaceId,
   getToken,
   setToken,
