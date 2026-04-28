@@ -5,6 +5,14 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../../lib/api-client";
 
+const navigateMock = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>(
+    "react-router-dom"
+  );
+  return { ...actual, useNavigate: () => navigateMock };
+});
+
 vi.mock("../../stores/auth-store", () => ({
   useAuthStore: (selector: (s: unknown) => unknown) =>
     selector({
@@ -41,6 +49,7 @@ const docFixture = (id: string, name = `${id}.pdf`, gt = false) => ({
 beforeEach(() => {
   mock = new MockAdapter(api);
   mock.onGet("/api/v1/workspaces/ws-1/projects/p-1").reply(200, PROJECT);
+  navigateMock.mockReset();
 });
 
 afterEach(() => {
@@ -185,23 +194,35 @@ describe("ProjectDocumentsPage", () => {
     await waitFor(() => expect(getCalls).toBeGreaterThanOrEqual(2));
   });
 
-  it("clicking Predict on a row opens PredictModal", async () => {
+  it("clicking 工作台 on a row navigates to workspace URL", async () => {
     mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, docList([
       docFixture("d-1", "x.pdf"),
     ]));
-    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
-      id: "pr-1", document_id: "d-1", version: 1,
-      structured_data: { x: 1 }, inferred_schema: { x: "number" },
-      prompt_used: "p", processor_key: "mock|m", source: "predict",
-      created_by: "u-1", created_at: "",
-    });
-    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
-
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("x.pdf");
-    await user.click(screen.getByRole("button", { name: /^Predict$/ }));
-    expect(await screen.findByText(/Predict — x.pdf/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^工作台$/ }));
+    expect(navigateMock).toHaveBeenCalledWith(
+      "/workspaces/demo/projects/p-1/workspace?doc=d-1"
+    );
+  });
+
+  it("Next Unreviewed navigates to workspace when found", async () => {
+    mock.onGet("/api/v1/projects/p-1/documents/next-unreviewed").reply(200, {
+      id: "d-99", filename: "next.pdf",
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, docList([
+      docFixture("d-1"),
+    ]));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("d-1.pdf");
+    await user.click(screen.getByRole("button", { name: /Next Unreviewed/i }));
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith(
+        "/workspaces/demo/projects/p-1/workspace?doc=d-99"
+      )
+    );
   });
 
   it("Batch Predict button is disabled when no rows selected", async () => {
@@ -214,22 +235,22 @@ describe("ProjectDocumentsPage", () => {
     expect(btn).toBeDisabled();
   });
 
-  it("Next Unreviewed: 404 shows toast/alert and no modal opens", async () => {
-    // Register specific handler BEFORE the regex so it takes priority (FIFO matching)
+  it("Next Unreviewed 404 alerts and does not navigate to workspace", async () => {
     mock.onGet("/api/v1/projects/p-1/documents/next-unreviewed").reply(404, {
       error: { code: "no_unreviewed_documents", message: "all done" },
     });
     mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, docList([
       docFixture("d-1"),
     ]));
-    // Stub alert so we don't get a real popup
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("d-1.pdf");
     await user.click(screen.getByRole("button", { name: /Next Unreviewed/i }));
-    // Modal should NOT open
-    expect(screen.queryByText(/Predict —/)).not.toBeInTheDocument();
+    await waitFor(() => expect(alertSpy).toHaveBeenCalled());
+    expect(navigateMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("/workspace?doc=")
+    );
     alertSpy.mockRestore();
   });
 });

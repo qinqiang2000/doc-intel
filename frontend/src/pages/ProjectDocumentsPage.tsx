@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import DocumentUploader from "../components/upload/DocumentUploader";
-import PredictModal from "../components/predict/PredictModal";
 import BatchPredictDrawer from "../components/predict/BatchPredictDrawer";
 import { api, extractApiError } from "../lib/api-client";
 import { useAuthStore } from "../stores/auth-store";
@@ -37,6 +36,7 @@ interface DocList {
 
 export default function ProjectDocumentsPage() {
   const { slug, pid } = useParams();
+  const navigate = useNavigate();
   const workspaces = useAuthStore((s) => s.workspaces);
   const ws = workspaces.find((w) => w.slug === slug);
 
@@ -51,7 +51,6 @@ export default function ProjectDocumentsPage() {
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
 
-  const [predictTarget, setPredictTarget] = useState<{ id: string; filename: string } | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -77,7 +76,10 @@ export default function ProjectDocumentsPage() {
     if (!pid) return;
     const doc = await loadNextUnreviewed(pid);
     if (doc) {
-      setPredictTarget(doc);
+      const wsSlug = ws?.slug;
+      if (wsSlug) {
+        navigate(`/workspaces/${wsSlug}/projects/${pid}/workspace?doc=${doc.id}`);
+      }
     } else {
       alert("已全部 predict 过");
     }
@@ -271,10 +273,12 @@ export default function ProjectDocumentsPage() {
                 <td className="text-right">
                   <button
                     type="button"
-                    onClick={() => setPredictTarget({ id: d.id, filename: d.filename })}
+                    onClick={() => ws && navigate(
+                      `/workspaces/${ws.slug}/projects/${pid}/workspace?doc=${d.id}`
+                    )}
                     className="text-xs text-[#6366f1] hover:underline mr-3"
                   >
-                    Predict
+                    工作台
                   </button>
                   <button
                     type="button"
@@ -319,17 +323,6 @@ export default function ProjectDocumentsPage() {
             下一页
           </button>
         </div>
-      )}
-      {predictTarget && (
-        <PredictModal
-          projectId={pid ?? ""}
-          documentId={predictTarget.id}
-          filename={predictTarget.filename}
-          onClose={() => {
-            setPredictTarget(null);
-            void loadDocs();
-          }}
-        />
       )}
       {batchOpen && <BatchPredictDrawer onClose={() => {
         setBatchOpen(false);
