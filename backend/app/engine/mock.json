@@ -1,0 +1,41 @@
+[
+    {
+      "docType": "receipt",
+      "nameOfInvoice": "航空运输电子客票行程单",
+      "invoiceNumber": "5607808043 5",
+      "invoiceDate": "2025-05-08",
+      "totalAmount": 6135.00,
+      "currency": "CNY",
+      "billToName": "WANG/ZHIDA",
+      "billFromTaxIdentificationNumber": "91110102680696563W",
+      "shipmentNumber": "7846407891587",
+      "detailOfGoodsOrServices": [
+        {
+          "articleName": "机票",
+          "grossAmount": 4950.00,
+          "orderNumber": "CZ624"
+        },
+        {
+          "articleName": "机票",
+          "grossAmount": 0.00,
+          "orderNumber": "CZ623"
+        },
+        {
+          "articleName": "燃油附加费",
+          "grossAmount": 135.00
+        },
+        {
+          "articleName": "民航发展基金",
+          "grossAmount": 121.00
+        },
+        {
+          "articleName": "其他费用",
+          "grossAmount": 1029.00
+        },
+        {
+          "articleName": "保险费",
+          "grossAmount": 0.00
+        }
+      ]
+    }
+  ]
