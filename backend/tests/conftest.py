@@ -57,7 +57,15 @@ async def db_session(db_engine):
 @pytest_asyncio.fixture
 async def client(db_engine):
     """ASGI client with overridden get_db pointing at the test engine."""
+    import importlib
+
     from app.main import app
+    # Re-import after potential reloads in test_database.py so the key we
+    # register in dependency_overrides matches the reference held by deps.py.
+    import app.core.database as _db_mod
+    import app.core.deps as _deps_mod
+    importlib.reload(_db_mod)
+    importlib.reload(_deps_mod)
     from app.core.database import get_db
 
     SessionLocal = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
