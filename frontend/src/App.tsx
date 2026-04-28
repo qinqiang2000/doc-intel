@@ -8,6 +8,7 @@ import ProjectDocumentsPage from "./pages/ProjectDocumentsPage";
 import ProjectListPage from "./pages/ProjectListPage";
 import ProjectSettingsPage from "./pages/ProjectSettingsPage";
 import WorkspaceCreatePage from "./pages/WorkspaceCreatePage";
+import WorkspacePage from "./pages/WorkspacePage";
 import WorkspaceSettingsPage from "./pages/WorkspaceSettingsPage";
 import { useAuthStore } from "./stores/auth-store";
 
@@ -55,6 +56,10 @@ export default function App() {
           />
           <Route path="/workspaces/:slug/projects/new" element={<ProjectCreatePage />} />
           <Route path="/workspaces/:slug/projects/:pid" element={<ProjectDocumentsPage />} />
+          <Route
+            path="/workspaces/:slug/projects/:pid/workspace"
+            element={<WorkspacePage />}
+          />
           <Route path="/workspaces/:slug/projects/:pid/settings" element={<ProjectSettingsPage />} />
         </Route>
 
