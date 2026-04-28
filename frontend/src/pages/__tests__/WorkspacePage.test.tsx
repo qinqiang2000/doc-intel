@@ -60,7 +60,7 @@ function renderPage(initialPath: string) {
 describe("WorkspacePage", () => {
   it("renders three-column layout once doc is fetched", async () => {
     mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
-    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
     mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
     mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
       id: "pr-1", document_id: "d-1", version: 1,
@@ -111,7 +111,7 @@ describe("WorkspacePage", () => {
 
   it("loads annotations into B column", async () => {
     mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
-    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
     mock.onGet("/api/v1/documents/d-1/annotations").reply(200, [{
       id: "a-1", document_id: "d-1", field_name: "invoice_no",
       field_value: "INV-001", field_type: "string", bounding_box: null,
@@ -134,7 +134,7 @@ describe("WorkspacePage", () => {
 
   it("auto-triggers predict when no cached result", async () => {
     mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
-    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
     mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
     mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
       id: "pr-1", document_id: "d-1", version: 1, structured_data: { ok: true },
@@ -164,7 +164,7 @@ describe("WorkspacePage", () => {
     } as never);
 
     mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
-    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
     mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
     mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
       items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
@@ -177,7 +177,7 @@ describe("WorkspacePage", () => {
 
   it("toolbar dropdown switches doc via URL navigation", async () => {
     mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
-    mock.onGet(/d-1\/preview$/).reply(200, "");
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
     mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
     mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
       id: "pr-1", document_id: "d-1", version: 1, structured_data: {},

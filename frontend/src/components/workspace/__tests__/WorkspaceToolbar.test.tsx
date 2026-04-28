@@ -28,6 +28,7 @@ function renderToolbar(props: Partial<React.ComponentProps<typeof WorkspaceToolb
   return render(
     <MemoryRouter>
       <WorkspaceToolbar
+        workspaceSlug="demo"
         projectId="p-1"
         projectName="Receipts"
         documents={docs}
@@ -61,6 +62,7 @@ describe("WorkspaceToolbar", () => {
     rerender(
       <MemoryRouter>
         <WorkspaceToolbar
+          workspaceSlug="demo"
           projectId="p-1" projectName="Receipts"
           documents={docs} currentDocId="d-3" onSwitch={onSwitchMock}
         />

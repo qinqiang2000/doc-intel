@@ -24,10 +24,6 @@ interface DocDetail extends DocBrief {
   mime_type: string;
 }
 
-const API_BASE =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "http://localhost:8000";
-
 export default function WorkspacePage() {
   const { slug, pid } = useParams();
   const [searchParams] = useSearchParams();
@@ -37,6 +33,7 @@ export default function WorkspacePage() {
   const [docs, setDocs] = useState<DocBrief[]>([]);
   const [currentDoc, setCurrentDoc] = useState<DocDetail | null>(null);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null);
   const [empty, setEmpty] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,18 +79,28 @@ export default function WorkspacePage() {
   useEffect(() => {
     if (!pid || !docId) return;
     let cancelled = false;
+    let objectUrl: string | null = null;
     void (async () => {
       try {
         const r = await api.get<DocDetail>(
           `/api/v1/projects/${pid}/documents/${docId}`
         );
-        if (!cancelled) setCurrentDoc(r.data);
+        if (cancelled) return;
+        setCurrentDoc(r.data);
+        const blobResp = await api.get<Blob>(
+          `/api/v1/projects/${pid}/documents/${docId}/preview`,
+          { responseType: "blob" }
+        );
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blobResp.data);
+        setPreviewObjectUrl(objectUrl);
       } catch (e) {
         if (!cancelled) setError(extractApiError(e).message);
       }
     })();
     return () => {
       cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [pid, docId]);
 
@@ -166,11 +173,10 @@ export default function WorkspacePage() {
     return <div className="text-center text-[#94a3b8] py-12 text-sm">Loading workspace...</div>;
   }
 
-  const previewUrl = `${API_BASE}/api/v1/projects/${pid}/documents/${docId}/preview`;
-
   return (
     <div className="flex flex-col h-full -m-6">
       <WorkspaceToolbar
+        workspaceSlug={slug ?? ""}
         projectId={pid ?? ""}
         projectName="Project"
         documents={docs}
@@ -182,9 +188,9 @@ export default function WorkspacePage() {
           <AdvancedPanel projectId={pid ?? ""} documentId={docId} />
           {loading && !result ? (
             <div className="text-sm text-[#94a3b8] p-4">⏳ Predicting (10-30s)...</div>
-          ) : (
+          ) : previewObjectUrl ? (
             <DocumentCanvas
-              previewUrl={previewUrl}
+              previewUrl={previewObjectUrl}
               mimeType={currentDoc.mime_type}
               filename={currentDoc.filename}
             >
@@ -194,6 +200,8 @@ export default function WorkspacePage() {
                 onSelect={setSelectedAnnotationId}
               />
             </DocumentCanvas>
+          ) : (
+            <div className="text-sm text-[#94a3b8] p-4">⏳ Loading preview...</div>
           )}
         </div>
         <div className="w-[360px] border-l border-[#2a2e3d] overflow-auto p-3">

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { usePredictStore } from "../../stores/predict-store";
 
 interface Props {
+  workspaceSlug: string;
   projectId: string;
   projectName: string;
   documents: { id: string; filename: string }[];
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export default function WorkspaceToolbar({
-  projectId, projectName, documents, currentDocId, onSwitch,
+  workspaceSlug, projectId, projectName, documents, currentDocId, onSwitch,
 }: Props) {
   const navigate = useNavigate();
   const loadNextUnreviewed = usePredictStore((s) => s.loadNextUnreviewed);
@@ -35,7 +36,7 @@ export default function WorkspaceToolbar({
     <div className="bg-[#1a1d27] border-b border-[#2a2e3d] px-4 py-2 flex items-center gap-3 text-sm">
       <button
         type="button"
-        onClick={() => navigate(`/projects/${projectId}`)}
+        onClick={() => navigate(`/workspaces/${workspaceSlug}/projects/${projectId}`)}
         className="text-[#94a3b8] hover:text-[#e2e8f0] flex items-center gap-1"
         title="回到项目列表"
       >
