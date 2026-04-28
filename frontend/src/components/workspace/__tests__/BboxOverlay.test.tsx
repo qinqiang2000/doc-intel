@@ -1,8 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import BboxOverlay from "../BboxOverlay";
 import type { Annotation } from "../../../stores/predict-store";
+
+type BoundingBox_ = { x: number; y: number; w: number; h: number; page: number };
 
 const STUB_RECT: DOMRect = {
   x: 0, y: 0, width: 1000, height: 1400,
@@ -149,5 +151,99 @@ describe("BboxOverlay", () => {
       />
     );
     expect(screen.queryAllByTestId(/^bbox-handle-/)).toHaveLength(0);
+  });
+
+  it("dragging the bbox body calls onPatchBbox with shifted x/y on pointer-up", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[ann("a-1", { bounding_box: { x: 0.1, y: 0.1, w: 0.2, h: 0.05, page: 0 } })]}
+        selectedAnnotationId="a-1"
+        onSelect={vi.fn()}
+        onPatchBbox={onPatch}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    const box = screen.getByRole("button", { name: /field-a-1/ });
+
+    fireEvent.pointerDown(box, { clientX: 200, clientY: 200, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(box, { clientX: 300, clientY: 200, pointerId: 1 });
+    fireEvent.pointerUp(box,   { clientX: 300, clientY: 200, pointerId: 1 });
+
+    // 100 px / 1000 px = 0.1 fraction; new x = 0.1 + 0.1 = 0.2
+    expect(onPatch).toHaveBeenCalledTimes(1);
+    expect(onPatch.mock.calls[0][0]).toBe("a-1");
+    const sent = onPatch.mock.calls[0][1] as BoundingBox_;
+    expect(sent.x).toBeCloseTo(0.2, 3);
+    expect(sent.y).toBeCloseTo(0.1, 3);
+    expect(sent.w).toBeCloseTo(0.2, 3);
+    expect(sent.h).toBeCloseTo(0.05, 3);
+    expect(sent.page).toBe(0);
+  });
+
+  it("does NOT call onPatchBbox when pointer-up fires without movement (click-only)", async () => {
+    const onPatch = vi.fn();
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[ann("a-1")]}
+        selectedAnnotationId="a-1"
+        onSelect={vi.fn()}
+        onPatchBbox={onPatch}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    const box = screen.getByRole("button", { name: /field-a-1/ });
+    fireEvent.pointerDown(box, { clientX: 100, clientY: 100, pointerId: 1, button: 0 });
+    fireEvent.pointerUp(box,   { clientX: 100, clientY: 100, pointerId: 1 });
+    expect(onPatch).not.toHaveBeenCalled();
+  });
+
+  it("clamps x to [0, 1-w] when drag would push beyond page edge", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[ann("a-1", { bounding_box: { x: 0.7, y: 0.1, w: 0.2, h: 0.05, page: 0 } })]}
+        selectedAnnotationId="a-1"
+        onSelect={vi.fn()}
+        onPatchBbox={onPatch}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    const box = screen.getByRole("button", { name: /field-a-1/ });
+    fireEvent.pointerDown(box, { clientX: 800, clientY: 200, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(box, { clientX: 1300, clientY: 200, pointerId: 1 });
+    fireEvent.pointerUp(box,   { clientX: 1300, clientY: 200, pointerId: 1 });
+
+    const sent = onPatch.mock.calls[0][1] as BoundingBox_;
+    // Clamped: max x = 1 - 0.2 = 0.8
+    expect(sent.x).toBeCloseTo(0.8, 3);
+  });
+
+  it("preserves bbox.page from the existing annotation when patching", async () => {
+    const onPatch = vi.fn().mockResolvedValue(undefined);
+    render(
+      <BboxOverlay
+        pageNumber={2}
+        pageRect={STUB_RECT}
+        annotations={[ann("a-1", { bounding_box: { x: 0.1, y: 0.1, w: 0.2, h: 0.05, page: 1 } })]}
+        selectedAnnotationId="a-1"
+        onSelect={vi.fn()}
+        onPatchBbox={onPatch}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    const box = screen.getByRole("button", { name: /field-a-1/ });
+    fireEvent.pointerDown(box, { clientX: 100, clientY: 100, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(box, { clientX: 150, clientY: 100, pointerId: 1 });
+    fireEvent.pointerUp(box,   { clientX: 150, clientY: 100, pointerId: 1 });
+
+    const sent = onPatch.mock.calls[0][1] as BoundingBox_;
+    expect(sent.page).toBe(1);
   });
 });

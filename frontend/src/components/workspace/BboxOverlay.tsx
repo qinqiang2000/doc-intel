@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import type { Annotation } from "../../stores/predict-store";
 
 type BoundingBox = { x: number; y: number; w: number; h: number; page: number };
@@ -40,18 +41,82 @@ function colorFor(a: Annotation, isSelected: boolean): string {
   return COLOR_LO;
 }
 
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+interface DragState {
+  id: string;
+  origin: { x: number; y: number };
+  origBbox: BoundingBox;
+  moved: boolean;
+  delta: { dx: number; dy: number };
+}
+
 export default function BboxOverlay({
-  annotations, selectedAnnotationId, onSelect,
-  // T5+ uses these; reference them so unused-var lint stays quiet
-  pageNumber: _pageNumber, pageRect: _pageRect,
-  onPatchBbox: _onPatchBbox, onCreateBbox: _onCreateBbox,
+  pageNumber, pageRect, annotations, selectedAnnotationId, onSelect,
+  onPatchBbox,
+  onCreateBbox: _onCreateBbox,
 }: Props) {
-  void _pageNumber;
-  void _pageRect;
-  void _onPatchBbox;
+  void pageNumber;
   void _onCreateBbox;
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  function handleBodyPointerDown(
+    e: React.PointerEvent<HTMLButtonElement>,
+    a: Annotation
+  ) {
+    if (a.bounding_box == null) return;
+    e.stopPropagation();
+    onSelect(a.id);
+    setDrag({
+      id: a.id,
+      origin: { x: e.clientX, y: e.clientY },
+      origBbox: a.bounding_box as BoundingBox,
+      moved: false,
+      delta: { dx: 0, dy: 0 },
+    });
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function handleBodyPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    if (!drag) return;
+    const dx = e.clientX - drag.origin.x;
+    const dy = e.clientY - drag.origin.y;
+    setDrag({ ...drag, delta: { dx, dy }, moved: drag.moved || dx !== 0 || dy !== 0 });
+  }
+
+  async function handleBodyPointerUp(
+    e: React.PointerEvent<HTMLButtonElement>,
+    a: Annotation
+  ) {
+    if (!drag || drag.id !== a.id) return;
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    const { dx, dy } = drag.delta;
+    const moved = drag.moved;
+    setDrag(null);
+    if (!moved) return;
+    const fx = dx / pageRect.width;
+    const fy = dy / pageRect.height;
+    const ob = drag.origBbox;
+    const newBbox: BoundingBox = {
+      x: clamp(ob.x + fx, 0, 1 - ob.w),
+      y: clamp(ob.y + fy, 0, 1 - ob.h),
+      w: ob.w,
+      h: ob.h,
+      page: ob.page,
+    };
+    try {
+      await onPatchBbox(a.id, newBbox);
+    } catch (err) {
+      console.error("[BboxOverlay] patch failed", err);
+    }
+  }
+
   return (
     <div
+      ref={containerRef}
       className="absolute inset-0 pointer-events-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) onSelect(null);
@@ -60,22 +125,32 @@ export default function BboxOverlay({
       {annotations
         .filter((a) => a.bounding_box != null)
         .map((a) => {
-          const bbox = a.bounding_box!;
+          const bbox = a.bounding_box! as BoundingBox;
           const isSelected = selectedAnnotationId === a.id;
           const color = colorFor(a, isSelected);
+          const isDragging = drag?.id === a.id && drag.moved;
+          const xPct = isDragging
+            ? (bbox.x + drag.delta.dx / pageRect.width) * 100
+            : bbox.x * 100;
+          const yPct = isDragging
+            ? (bbox.y + drag.delta.dy / pageRect.height) * 100
+            : bbox.y * 100;
           return (
             <button
               key={a.id}
               type="button"
               aria-label={a.field_name}
+              onPointerDown={(e) => handleBodyPointerDown(e, a)}
+              onPointerMove={handleBodyPointerMove}
+              onPointerUp={(e) => void handleBodyPointerUp(e, a)}
               onClick={(e) => {
                 e.stopPropagation();
-                onSelect(a.id);
+                if (!drag || !drag.moved) onSelect(a.id);
               }}
-              className="absolute pointer-events-auto cursor-pointer"
+              className="absolute pointer-events-auto cursor-move"
               style={{
-                left: `${bbox.x * 100}%`,
-                top: `${bbox.y * 100}%`,
+                left: `${xPct}%`,
+                top: `${yPct}%`,
                 width: `${bbox.w * 100}%`,
                 height: `${bbox.h * 100}%`,
                 border: `${isSelected ? 4 : 2}px solid ${color}`,
@@ -85,7 +160,7 @@ export default function BboxOverlay({
               }}
             >
               <span
-                className="absolute -top-5 left-0 text-[9px] font-semibold text-white px-1 rounded-t"
+                className="absolute -top-5 left-0 text-[9px] font-semibold text-white px-1 rounded-t pointer-events-none"
                 style={{ backgroundColor: color }}
               >
                 {a.field_name}
