@@ -1,6 +1,9 @@
-"""Aggregate v1 router. Sub-routers added by Tasks 10-12."""
+"""Aggregate v1 router."""
 from __future__ import annotations
 
 from fastapi import APIRouter
 
+from app.api.v1 import auth as auth_module
+
 v1_router = APIRouter(prefix="/api/v1")
+v1_router.include_router(auth_module.router)

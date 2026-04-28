@@ -1,9 +1,84 @@
-"""Shared pytest config — module discovery."""
+"""Shared pytest config — async mode, in-memory SQLite per test, HTTP client."""
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
+import pytest
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import event, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+# Add backend root so `import app.*` works in tests
 _BACKEND_ROOT = Path(__file__).parent.parent
 if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
+
+
+@pytest.fixture(autouse=True)
+def _env(monkeypatch, tmp_path):
+    monkeypatch.setenv("JWT_SECRET_KEY", "x" * 32)
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path}/test.db")
+    monkeypatch.setenv("CORS_ORIGINS", '["http://localhost:5173"]')
+    from app.core import config as cfg_mod
+    cfg_mod.get_settings.cache_clear()
+
+
+@pytest_asyncio.fixture
+async def db_engine(tmp_path):
+    url = f"sqlite+aiosqlite:///{tmp_path}/test.db"
+    engine = create_async_engine(url, future=True)
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def _pragma(dbapi_conn, _):
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA foreign_keys=ON")
+        cur.close()
+
+    from app.models.base import Base
+    from app.models import user, workspace, workspace_member  # noqa: F401
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield engine
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def db_session(db_engine):
+    SessionLocal = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    async with SessionLocal() as s:
+        await s.execute(text("PRAGMA foreign_keys=ON"))
+        yield s
+
+
+@pytest_asyncio.fixture
+async def client(db_engine):
+    """ASGI client with overridden get_db pointing at the test engine."""
+    from app.main import app
+    from app.core.database import get_db
+
+    SessionLocal = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+
+    async def _override_get_db():
+        async with SessionLocal() as s:
+            await s.execute(text("PRAGMA foreign_keys=ON"))
+            yield s
+
+    app.dependency_overrides[get_db] = _override_get_db
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def registered_user(client):
+    """Register a fresh user; return ({email, password, display_name, id}, token)."""
+    payload = {"email": "test-user@x.com", "password": "secret123", "display_name": "Test"}
+    resp = await client.post("/api/v1/auth/register", json=payload)
+    data = resp.json()
+    user = {**payload, "id": data["user"]["id"]}
+    return user, data["token"]
