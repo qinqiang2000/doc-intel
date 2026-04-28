@@ -117,4 +117,37 @@ describe("BboxOverlay", () => {
     await user.click(screen.getByRole("button", { name: /field-a-1/ }));
     expect(onSelect).toHaveBeenCalledWith("a-1");
   });
+
+  it("renders 8 resize handles on selected bbox only", () => {
+    const annotations = [ann("a-1"), ann("a-2")];
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={annotations}
+        selectedAnnotationId="a-1"
+        onSelect={vi.fn()}
+        onPatchBbox={vi.fn()}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    const handles = screen.getAllByTestId(/^bbox-handle-a-1-/);
+    expect(handles).toHaveLength(8);
+    expect(screen.queryAllByTestId(/^bbox-handle-a-2-/)).toHaveLength(0);
+  });
+
+  it("does not render handles when nothing is selected", () => {
+    render(
+      <BboxOverlay
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        annotations={[ann("a-1")]}
+        selectedAnnotationId={null}
+        onSelect={vi.fn()}
+        onPatchBbox={vi.fn()}
+        onCreateBbox={vi.fn()}
+      />
+    );
+    expect(screen.queryAllByTestId(/^bbox-handle-/)).toHaveLength(0);
+  });
 });

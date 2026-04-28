@@ -17,6 +17,20 @@ const COLOR_HI = "#22c55e";
 const COLOR_MID = "#f59e0b";
 const COLOR_LO = "#ef4444";
 
+const HANDLE_KEYS = ["nw","n","ne","e","se","s","sw","w"] as const;
+type HandleKey = typeof HANDLE_KEYS[number];
+
+const HANDLE_CLASS: Record<HandleKey, string> = {
+  nw: "left-0 top-0 cursor-nwse-resize",
+  n:  "left-1/2 top-0 cursor-ns-resize",
+  ne: "left-full top-0 cursor-nesw-resize",
+  e:  "left-full top-1/2 cursor-ew-resize",
+  se: "left-full top-full cursor-nwse-resize",
+  s:  "left-1/2 top-full cursor-ns-resize",
+  sw: "left-0 top-full cursor-nesw-resize",
+  w:  "left-0 top-1/2 cursor-ew-resize",
+};
+
 function colorFor(a: Annotation, isSelected: boolean): string {
   if (isSelected) return COLOR_SELECTED;
   const c = a.confidence;
@@ -77,6 +91,15 @@ export default function BboxOverlay({
                 {a.field_name}
                 {a.confidence != null && ` ${Math.round(a.confidence * 100)}%`}
               </span>
+              {isSelected && HANDLE_KEYS.map((h) => (
+                <span
+                  key={h}
+                  data-testid={`bbox-handle-${a.id}-${h}`}
+                  className={`absolute pointer-events-auto bg-[#6366f1] ${HANDLE_CLASS[h]}`}
+                  style={{ width: 8, height: 8, marginLeft: -4, marginTop: -4 }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                />
+              ))}
             </button>
           );
         })}
