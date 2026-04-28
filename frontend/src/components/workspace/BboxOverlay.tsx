@@ -1,15 +1,21 @@
 import type { Annotation } from "../../stores/predict-store";
 
+type BoundingBox = { x: number; y: number; w: number; h: number; page: number };
+
 interface Props {
+  pageNumber: number;
+  pageRect: DOMRect;
   annotations: Annotation[];
   selectedAnnotationId: string | null;
   onSelect: (id: string | null) => void;
+  onPatchBbox: (id: string, bbox: BoundingBox) => Promise<void>;
+  onCreateBbox: (bbox: BoundingBox, fieldName: string) => Promise<void>;
 }
 
-const COLOR_SELECTED = "#6366f1";    // indigo
-const COLOR_HI = "#22c55e";          // green
-const COLOR_MID = "#f59e0b";         // amber
-const COLOR_LO = "#ef4444";          // red
+const COLOR_SELECTED = "#6366f1";
+const COLOR_HI = "#22c55e";
+const COLOR_MID = "#f59e0b";
+const COLOR_LO = "#ef4444";
 
 function colorFor(a: Annotation, isSelected: boolean): string {
   if (isSelected) return COLOR_SELECTED;
@@ -22,7 +28,14 @@ function colorFor(a: Annotation, isSelected: boolean): string {
 
 export default function BboxOverlay({
   annotations, selectedAnnotationId, onSelect,
+  // T5+ uses these; reference them so unused-var lint stays quiet
+  pageNumber: _pageNumber, pageRect: _pageRect,
+  onPatchBbox: _onPatchBbox, onCreateBbox: _onCreateBbox,
 }: Props) {
+  void _pageNumber;
+  void _pageRect;
+  void _onPatchBbox;
+  void _onCreateBbox;
   return (
     <div
       className="absolute inset-0 pointer-events-none"

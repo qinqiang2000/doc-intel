@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import BboxOverlay from "../BboxOverlay";
 import type { Annotation } from "../../../stores/predict-store";
 
+const STUB_RECT: DOMRect = {
+  x: 0, y: 0, width: 1000, height: 1400,
+  top: 0, left: 0, right: 1000, bottom: 1400,
+  toJSON() { return this; },
+};
+
 const ann = (id: string, partial?: Partial<Annotation>): Annotation => ({
   id, document_id: "d-1", field_name: `field-${id}`,
   field_value: "v", field_type: "string",
@@ -22,6 +28,10 @@ describe("BboxOverlay", () => {
         annotations={annotations}
         selectedAnnotationId={null}
         onSelect={vi.fn()}
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        onPatchBbox={vi.fn()}
+        onCreateBbox={vi.fn()}
       />
     );
     const boxes = screen.getAllByRole("button", { name: /field-/ });
@@ -38,6 +48,10 @@ describe("BboxOverlay", () => {
         annotations={annotations}
         selectedAnnotationId={null}
         onSelect={vi.fn()}
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        onPatchBbox={vi.fn()}
+        onCreateBbox={vi.fn()}
       />
     );
     expect(screen.getAllByRole("button", { name: /field-/ })).toHaveLength(1);
@@ -54,6 +68,10 @@ describe("BboxOverlay", () => {
         annotations={annotations}
         selectedAnnotationId={null}
         onSelect={vi.fn()}
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        onPatchBbox={vi.fn()}
+        onCreateBbox={vi.fn()}
       />
     );
     const hi = screen.getByRole("button", { name: /field-hi/ });
@@ -71,6 +89,10 @@ describe("BboxOverlay", () => {
         annotations={annotations}
         selectedAnnotationId="a-1"
         onSelect={vi.fn()}
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        onPatchBbox={vi.fn()}
+        onCreateBbox={vi.fn()}
       />
     );
     const sel = screen.getByRole("button", { name: /field-a-1/ });
@@ -86,6 +108,10 @@ describe("BboxOverlay", () => {
         annotations={annotations}
         selectedAnnotationId={null}
         onSelect={onSelect}
+        pageNumber={1}
+        pageRect={STUB_RECT}
+        onPatchBbox={vi.fn()}
+        onCreateBbox={vi.fn()}
       />
     );
     await user.click(screen.getByRole("button", { name: /field-a-1/ }));
