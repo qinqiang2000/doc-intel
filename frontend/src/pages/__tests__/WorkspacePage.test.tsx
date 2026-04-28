@@ -36,7 +36,14 @@ const docFixture = (id: string, name = `${id}.pdf`) => ({
 beforeEach(() => {
   mock = new MockAdapter(api);
   navigateMock.mockReset();
-  usePredictStore.setState({ results: {}, loading: {}, batchProgress: null, selectedAnnotationId: null });
+  usePredictStore.setState({
+    results: {}, loading: {}, batchProgress: null,
+    selectedAnnotationId: null,
+    currentStep: 0,
+    apiFormat: "flat",
+    processorOverride: "",
+    promptOverride: "",
+  });
 });
 
 afterEach(() => {
@@ -201,5 +208,72 @@ describe("WorkspacePage", () => {
         "/workspaces/demo/projects/p-1/workspace?doc=d-2"
       )
     );
+  });
+
+  it("auto-advances currentStep to 1 once predict result loads", async () => {
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1,
+      structured_data: { hello: "world" }, inferred_schema: null,
+      prompt_used: "p", processor_key: "mock|m", source: "predict",
+      created_by: "u-1", created_at: "",
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    await waitFor(() => {
+      expect(usePredictStore.getState().currentStep).toBe(1);
+    });
+  });
+
+  it("auto-advances currentStep to 3 when apiFormat changes from flat", async () => {
+    usePredictStore.setState({
+      results: {
+        "d-1": {
+          id: "pr-1", document_id: "d-1", version: 1,
+          structured_data: { a: 1 }, inferred_schema: null,
+          prompt_used: "", processor_key: "mock|m", source: "predict",
+          created_by: "u-1", created_at: "",
+        },
+      },
+      currentStep: 1,
+    });
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    await screen.findByText(/"a": 1/);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Detailed/ }));
+    await waitFor(() => {
+      expect(usePredictStore.getState().currentStep).toBe(3);
+    });
+  });
+
+  it("renders StepIndicator showing 6 steps in the workspace", async () => {
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1, structured_data: {},
+      inferred_schema: null, prompt_used: "", processor_key: "mock|m",
+      source: "predict", created_by: "u-1", created_at: "",
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    for (const label of ["Upload", "Preview", "Correct", "ApiFormat", "Tune", "GenerateAPI"]) {
+      expect(await screen.findByText(new RegExp(label))).toBeInTheDocument();
+    }
   });
 });
