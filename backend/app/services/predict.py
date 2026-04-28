@@ -221,3 +221,48 @@ async def predict_single(
     await db.commit()
     await db.refresh(pr)
     return pr
+
+
+async def predict_batch_stream(
+    db_factory,
+    *,
+    project: Project,
+    document_ids: list[str],
+    user_id: str,
+    prompt_override: str | None = None,
+    processor_key_override: str | None = None,
+) -> AsyncIterator[dict]:
+    """Yield {document_id, status, processing_result_id?, error?} per doc,
+    then a final {_final, total, succeeded, failed}."""
+    succeeded = 0
+    failed = 0
+    for doc_id in document_ids:
+        yield {"document_id": doc_id, "status": "started"}
+        try:
+            async with db_factory() as db:
+                doc = await db.get(Document, doc_id)
+                user = await db.get(User, user_id)
+                if doc is None or doc.project_id != project.id or doc.deleted_at is not None:
+                    yield {"document_id": doc_id, "status": "failed", "error": "document_not_found"}
+                    failed += 1
+                    continue
+                # re-fetch project in this session
+                proj_in_session = await db.get(Project, project.id)
+                if proj_in_session is None:
+                    yield {"document_id": doc_id, "status": "failed", "error": "project_not_found"}
+                    failed += 1
+                    continue
+                pr = await predict_single(
+                    db, document=doc, project=proj_in_session, user=user,
+                    prompt_override=prompt_override,
+                    processor_key_override=processor_key_override,
+                )
+            yield {"document_id": doc_id, "status": "completed", "processing_result_id": pr.id}
+            succeeded += 1
+        except PredictError as e:
+            yield {"document_id": doc_id, "status": "failed", "error": f"{e.code}: {e.message}"}
+            failed += 1
+        except Exception as e:
+            yield {"document_id": doc_id, "status": "failed", "error": str(e)[:200]}
+            failed += 1
+    yield {"_final": True, "total": len(document_ids), "succeeded": succeeded, "failed": failed}

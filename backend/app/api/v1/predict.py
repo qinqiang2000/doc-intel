@@ -1,17 +1,26 @@
 """Predict endpoints — single sync POST + batch SSE."""
 from __future__ import annotations
 
+import json as _json
+from typing import AsyncIterator
+
+from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
-from fastapi import APIRouter
-
+from app.core.database import AsyncSessionLocal
 from app.core.deps import CurrentUser, DbSession
 from app.core.exceptions import AppError
 from app.models.document import Document
 from app.models.project import Project
 from app.models.workspace_member import WorkspaceMember
-from app.schemas.predict import PredictRequest, ProcessingResultRead
+from app.schemas.predict import BatchPredictRequest, PredictRequest, ProcessingResultRead
 from app.services import predict as predict_svc
+
+
+def get_session_factory():
+    """Return the async session factory. Overridable in tests."""
+    return AsyncSessionLocal
 
 router = APIRouter(prefix="/projects", tags=["predict"])
 
@@ -69,3 +78,42 @@ async def predict_one(
             raise AppError(400, e.code, e.message)
         raise AppError(500, e.code, e.message)
     return ProcessingResultRead.model_validate(pr)
+
+
+@router.post("/{project_id}/batch-predict")
+async def batch_predict(
+    project_id: str,
+    body: BatchPredictRequest,
+    db: DbSession,
+    user: CurrentUser,
+    session_factory=Depends(get_session_factory),
+) -> StreamingResponse:
+    proj_stmt = select(Project).where(
+        Project.id == project_id, Project.deleted_at.is_(None)
+    )
+    project = (await db.execute(proj_stmt)).scalar_one_or_none()
+    if project is None:
+        raise AppError(404, "project_not_found", "Project not found.")
+    mem_stmt = select(WorkspaceMember).where(
+        WorkspaceMember.workspace_id == project.workspace_id,
+        WorkspaceMember.user_id == user.id,
+    )
+    if (await db.execute(mem_stmt)).scalar_one_or_none() is None:
+        raise AppError(403, "forbidden", "You are not a member of this workspace.")
+
+    async def event_gen() -> AsyncIterator[bytes]:
+        async for evt in predict_svc.predict_batch_stream(
+            session_factory,
+            project=project,
+            document_ids=body.document_ids,
+            user_id=user.id,
+            prompt_override=body.prompt_override,
+            processor_key_override=body.processor_key_override,
+        ):
+            if evt.get("_final"):
+                payload = {k: v for k, v in evt.items() if k != "_final"}
+                yield f"event: done\ndata: {_json.dumps(payload)}\n\n".encode()
+            else:
+                yield f"event: predict_progress\ndata: {_json.dumps(evt)}\n\n".encode()
+
+    return StreamingResponse(event_gen(), media_type="text/event-stream")

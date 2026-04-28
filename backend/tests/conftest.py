@@ -75,7 +75,16 @@ async def client(db_engine):
             await s.execute(text("PRAGMA foreign_keys=ON"))
             yield s
 
+    def _override_session_factory():
+        return SessionLocal
+
     app.dependency_overrides[get_db] = _override_get_db
+
+    # Override the session factory used by batch-predict SSE handler so it
+    # writes to the same test DB as the rest of the request session.
+    from app.api.v1.predict import get_session_factory
+    app.dependency_overrides[get_session_factory] = _override_session_factory
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
