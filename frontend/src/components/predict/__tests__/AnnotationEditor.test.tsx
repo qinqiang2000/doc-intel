@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AnnotationEditor from "../AnnotationEditor";
+import { usePredictStore } from "../../../stores/predict-store";
 
 const onPatchMock = vi.fn();
 const onDeleteMock = vi.fn();
@@ -116,5 +117,94 @@ describe("AnnotationEditor", () => {
     );
     expect(screen.getByRole("button", { name: /添加字段/ })).toBeInTheDocument();
     expect(screen.queryByDisplayValue("INV-001")).not.toBeInTheDocument();
+  });
+
+  it("highlights the row whose id matches selectedAnnotationId", () => {
+    usePredictStore.setState({ selectedAnnotationId: "a-2" });
+    render(
+      <AnnotationEditor
+        annotations={[
+          {
+            id: "a-1", document_id: "d-1", field_name: "field-1",
+            field_value: "v1", field_type: "string", bounding_box: null,
+            source: "ai_detected", confidence: null, is_ground_truth: false,
+            created_by: "u-1", updated_by_user_id: null,
+            created_at: "", updated_at: "",
+          },
+          {
+            id: "a-2", document_id: "d-1", field_name: "field-2",
+            field_value: "v2", field_type: "string", bounding_box: null,
+            source: "ai_detected", confidence: null, is_ground_truth: false,
+            created_by: "u-1", updated_by_user_id: null,
+            created_at: "", updated_at: "",
+          },
+        ]}
+        onPatch={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()}
+      />
+    );
+    const row1 = screen.getByText("field-1").closest("[data-row-id]") as HTMLElement;
+    const row2 = screen.getByText("field-2").closest("[data-row-id]") as HTMLElement;
+    expect(row1.className).not.toMatch(/border-\[#6366f1\]/);
+    expect(row2.className).toMatch(/border-\[#6366f1\]/);
+  });
+
+  it("clicking a row body sets selectedAnnotationId in store", async () => {
+    usePredictStore.setState({ selectedAnnotationId: null });
+    const user = userEvent.setup();
+    render(
+      <AnnotationEditor
+        annotations={[{
+          id: "a-1", document_id: "d-1", field_name: "field-1",
+          field_value: "v1", field_type: "string", bounding_box: null,
+          source: "ai_detected", confidence: null, is_ground_truth: false,
+          created_by: "u-1", updated_by_user_id: null,
+          created_at: "", updated_at: "",
+        }]}
+        onPatch={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()}
+      />
+    );
+    await user.click(screen.getByText("field-1"));
+    expect(usePredictStore.getState().selectedAnnotationId).toBe("a-1");
+  });
+
+  it("clicking the value input does NOT trigger row selection", async () => {
+    usePredictStore.setState({ selectedAnnotationId: null });
+    const user = userEvent.setup();
+    render(
+      <AnnotationEditor
+        annotations={[{
+          id: "a-1", document_id: "d-1", field_name: "field-1",
+          field_value: "v1", field_type: "string", bounding_box: null,
+          source: "ai_detected", confidence: null, is_ground_truth: false,
+          created_by: "u-1", updated_by_user_id: null,
+          created_at: "", updated_at: "",
+        }]}
+        onPatch={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()}
+      />
+    );
+    const input = screen.getByDisplayValue("v1");
+    await user.click(input);
+    expect(usePredictStore.getState().selectedAnnotationId).toBeNull();
+  });
+
+  it("calls scrollIntoView on the selected row when selection changes", () => {
+    const scrollFn = vi.fn();
+    Element.prototype.scrollIntoView = scrollFn;
+    usePredictStore.setState({ selectedAnnotationId: "a-1" });
+    render(
+      <AnnotationEditor
+        annotations={[{
+          id: "a-1", document_id: "d-1", field_name: "field-1",
+          field_value: "v1", field_type: "string", bounding_box: null,
+          source: "ai_detected", confidence: null, is_ground_truth: false,
+          created_by: "u-1", updated_by_user_id: null,
+          created_at: "", updated_at: "",
+        }]}
+        onPatch={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()}
+      />
+    );
+    expect(scrollFn).toHaveBeenCalledWith(
+      expect.objectContaining({ block: "nearest" })
+    );
   });
 });

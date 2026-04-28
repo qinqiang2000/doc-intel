@@ -1,5 +1,8 @@
-import { useState } from "react";
-import type { Annotation, AnnotationPatch, NewAnnotation } from "../../stores/predict-store";
+import { useEffect, useRef, useState } from "react";
+import {
+  usePredictStore,
+  type Annotation, type AnnotationPatch, type NewAnnotation,
+} from "../../stores/predict-store";
 
 interface Props {
   annotations: Annotation[];
@@ -11,11 +14,20 @@ interface Props {
 export default function AnnotationEditor({
   annotations, onPatch, onDelete, onAdd,
 }: Props) {
+  const selectedAnnotationId = usePredictStore((s) => s.selectedAnnotationId);
+  const setSelectedAnnotationId = usePredictStore((s) => s.setSelectedAnnotationId);
+
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newValue, setNewValue] = useState("");
   const [newType, setNewType] = useState("string");
   const [error, setError] = useState<string | null>(null);
+
+  const selectedRowRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    selectedRowRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedAnnotationId]);
 
   async function handleBlur(a: Annotation, value: string) {
     if (value === a.field_value) return;
@@ -31,10 +43,7 @@ export default function AnnotationEditor({
     if (!newName.trim()) return;
     try {
       await onAdd({ field_name: newName, field_value: newValue, field_type: newType });
-      setNewName("");
-      setNewValue("");
-      setNewType("string");
-      setAdding(false);
+      setNewName(""); setNewValue(""); setNewType("string"); setAdding(false);
     } catch (e) {
       setError((e as { message?: string })?.message ?? "添加失败");
     }
@@ -42,29 +51,44 @@ export default function AnnotationEditor({
 
   return (
     <div className="space-y-2">
-      {annotations.map((a) => (
-        <div key={a.id} className="flex items-center gap-2 text-sm">
-          <span className="text-xs text-[#94a3b8] w-32 truncate" title={a.field_name}>
-            {a.field_name}
-          </span>
-          <input
-            type="text"
-            defaultValue={a.field_value ?? ""}
-            onBlur={(e) => void handleBlur(a, e.target.value)}
-            className="flex-1 bg-[#0f1117] border border-[#2a2e3d] rounded px-2 py-1 text-sm focus:border-[#6366f1] outline-none"
-          />
-          <span className="text-xs">
-            {a.source === "ai_detected" ? "🤖" : "✏️"}
-          </span>
-          <button
-            type="button"
-            onClick={() => void onDelete(a.id)}
-            className="text-xs text-[#ef4444] hover:underline"
+      {annotations.map((a) => {
+        const isSelected = selectedAnnotationId === a.id;
+        return (
+          <div
+            key={a.id}
+            data-row-id={a.id}
+            ref={isSelected ? selectedRowRef : null}
+            onClick={() => setSelectedAnnotationId(a.id)}
+            className={`flex items-center gap-2 text-sm rounded px-1 py-0.5 cursor-pointer ${
+              isSelected ? "border-2 border-[#6366f1] bg-[#1a1d27]" : "border-2 border-transparent"
+            }`}
           >
-            删除
-          </button>
-        </div>
-      ))}
+            <span className="text-xs text-[#94a3b8] w-32 truncate" title={a.field_name}>
+              {a.field_name}
+            </span>
+            <input
+              type="text"
+              defaultValue={a.field_value ?? ""}
+              onBlur={(e) => void handleBlur(a, e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 bg-[#0f1117] border border-[#2a2e3d] rounded px-2 py-1 text-sm focus:border-[#6366f1] outline-none"
+            />
+            <span className="text-xs">
+              {a.source === "ai_detected" ? "🤖" : "✏️"}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                void onDelete(a.id);
+              }}
+              className="text-xs text-[#ef4444] hover:underline"
+            >
+              删除
+            </button>
+          </div>
+        );
+      })}
 
       {adding ? (
         <div className="bg-[#0f1117] border border-[#2a2e3d] rounded p-2 space-y-2">
