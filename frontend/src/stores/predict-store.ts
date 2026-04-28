@@ -97,7 +97,7 @@ interface PredictState {
   loadNextUnreviewed: (projectId: string) => Promise<{ id: string; filename: string } | null>;
 }
 
-export const usePredictStore = create<PredictState>((set, get) => ({
+export const usePredictStore = create<PredictState>((set) => ({
   loading: {},
   results: {},
   batchProgress: null,
