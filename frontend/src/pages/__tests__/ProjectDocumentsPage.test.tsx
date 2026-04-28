@@ -184,4 +184,52 @@ describe("ProjectDocumentsPage", () => {
 
     await waitFor(() => expect(getCalls).toBeGreaterThanOrEqual(2));
   });
+
+  it("clicking Predict on a row opens PredictModal", async () => {
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, docList([
+      docFixture("d-1", "x.pdf"),
+    ]));
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1,
+      structured_data: { x: 1 }, inferred_schema: { x: "number" },
+      prompt_used: "p", processor_key: "mock|m", source: "predict",
+      created_by: "u-1", created_at: "",
+    });
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("x.pdf");
+    await user.click(screen.getByRole("button", { name: /^Predict$/ }));
+    expect(await screen.findByText(/Predict — x.pdf/)).toBeInTheDocument();
+  });
+
+  it("Batch Predict button is disabled when no rows selected", async () => {
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, docList([
+      docFixture("d-1"),
+    ]));
+    renderPage();
+    await screen.findByText("d-1.pdf");
+    const btn = screen.getByRole("button", { name: /Batch Predict/i });
+    expect(btn).toBeDisabled();
+  });
+
+  it("Next Unreviewed: 404 shows toast/alert and no modal opens", async () => {
+    // Register specific handler BEFORE the regex so it takes priority (FIFO matching)
+    mock.onGet("/api/v1/projects/p-1/documents/next-unreviewed").reply(404, {
+      error: { code: "no_unreviewed_documents", message: "all done" },
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, docList([
+      docFixture("d-1"),
+    ]));
+    // Stub alert so we don't get a real popup
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("d-1.pdf");
+    await user.click(screen.getByRole("button", { name: /Next Unreviewed/i }));
+    // Modal should NOT open
+    expect(screen.queryByText(/Predict —/)).not.toBeInTheDocument();
+    alertSpy.mockRestore();
+  });
 });

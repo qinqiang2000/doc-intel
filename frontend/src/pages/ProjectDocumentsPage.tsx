@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import DocumentUploader from "../components/upload/DocumentUploader";
+import PredictModal from "../components/predict/PredictModal";
+import BatchPredictDrawer from "../components/predict/BatchPredictDrawer";
 import { api, extractApiError } from "../lib/api-client";
 import { useAuthStore } from "../stores/auth-store";
+import { usePredictStore } from "../stores/predict-store";
 
 interface Document {
   id: string;
@@ -47,6 +50,38 @@ export default function ProjectDocumentsPage() {
   const [sortBy, setSortBy] = useState("created_at");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
+
+  const [predictTarget, setPredictTarget] = useState<{ id: string; filename: string } | null>(null);
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const predictBatch = usePredictStore((s) => s.predictBatch);
+  const loadNextUnreviewed = usePredictStore((s) => s.loadNextUnreviewed);
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function onBatchPredict() {
+    if (selected.size === 0 || !pid) return;
+    setBatchOpen(true);
+    await predictBatch(pid, Array.from(selected));
+  }
+
+  async function onNextUnreviewed() {
+    if (!pid) return;
+    const doc = await loadNextUnreviewed(pid);
+    if (doc) {
+      setPredictTarget(doc);
+    } else {
+      alert("已全部 predict 过");
+    }
+  }
 
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   useEffect(() => {
@@ -133,6 +168,22 @@ export default function ProjectDocumentsPage() {
         onUploaded={() => void loadDocs()}
       />
 
+      <div className="flex gap-2 mt-4 mb-4">
+        <button
+          type="button" onClick={() => void onBatchPredict()}
+          disabled={selected.size === 0}
+          className="bg-[#6366f1] hover:bg-[#818cf8] text-white text-sm px-3 py-1.5 rounded disabled:opacity-50"
+        >
+          + Batch Predict ({selected.size} selected)
+        </button>
+        <button
+          type="button" onClick={() => void onNextUnreviewed()}
+          className="text-sm text-[#94a3b8] border border-[#2a2e3d] px-3 py-1.5 rounded hover:bg-[#1a1d27]"
+        >
+          ▶ Next Unreviewed
+        </button>
+      </div>
+
       <div className="mt-6 mb-4 flex flex-wrap gap-3 items-center">
         <input
           type="search"
@@ -187,6 +238,7 @@ export default function ProjectDocumentsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-xs uppercase text-[#94a3b8] border-b border-[#2a2e3d]">
+              <th className="text-left py-2 w-8"></th>
               <th className="text-left py-2">文件名</th>
               <th className="text-left">大小</th>
               <th className="text-left">类型</th>
@@ -198,6 +250,13 @@ export default function ProjectDocumentsPage() {
           <tbody>
             {docs.items.map((d) => (
               <tr key={d.id} className="border-b border-[#1a1d27]">
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(d.id)}
+                    onChange={() => toggleSelect(d.id)}
+                  />
+                </td>
                 <td className="py-2">{d.filename}</td>
                 <td>{(d.file_size / 1024).toFixed(1)} KB</td>
                 <td className="text-[#94a3b8]">{d.mime_type}</td>
@@ -210,6 +269,13 @@ export default function ProjectDocumentsPage() {
                   )}
                 </td>
                 <td className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setPredictTarget({ id: d.id, filename: d.filename })}
+                    className="text-xs text-[#6366f1] hover:underline mr-3"
+                  >
+                    Predict
+                  </button>
                   <button
                     type="button"
                     onClick={() => void toggleGT(d)}
@@ -254,6 +320,21 @@ export default function ProjectDocumentsPage() {
           </button>
         </div>
       )}
+      {predictTarget && (
+        <PredictModal
+          projectId={pid ?? ""}
+          documentId={predictTarget.id}
+          filename={predictTarget.filename}
+          onClose={() => {
+            setPredictTarget(null);
+            void loadDocs();
+          }}
+        />
+      )}
+      {batchOpen && <BatchPredictDrawer onClose={() => {
+        setBatchOpen(false);
+        void loadDocs();
+      }} />}
     </div>
   );
 }
