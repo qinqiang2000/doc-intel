@@ -59,7 +59,6 @@ async def test_predict_increments_version(client, registered_user):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail(reason="Annotation API in Task 7")
 async def test_predict_seeds_annotations(client, registered_user):
     _, token = registered_user
     _, pid, did = await _setup_project_with_doc(client, token)
