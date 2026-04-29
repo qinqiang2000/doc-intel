@@ -47,6 +47,27 @@ def build_default_prompt(template_key: str | None) -> str:
     return "请提取这份文档的关键字段并以 JSON 输出。"
 
 
+async def resolve_prompt(
+    db: AsyncSession,
+    *,
+    project: "Project",
+    prompt_override: str | None,
+) -> str:
+    """Priority: override > active prompt version > template default."""
+    if prompt_override:
+        return prompt_override
+    if project.active_prompt_version_id:
+        from app.models.prompt_version import PromptVersion
+        stmt = select(PromptVersion).where(
+            PromptVersion.id == project.active_prompt_version_id,
+            PromptVersion.deleted_at.is_(None),
+        )
+        pv = (await db.execute(stmt)).scalar_one_or_none()
+        if pv is not None:
+            return pv.prompt_text
+    return build_default_prompt(project.template_key)
+
+
 def _parse_llm_output(raw: str) -> dict:
     """Best-effort parse of LLM output; falls back to {'_raw': raw}."""
     if not raw:
@@ -185,8 +206,8 @@ async def predict_single(
     if "|" not in processor_key and hasattr(processor, "model_name"):
         final_processor_key = f"{p_type}|{processor.model_name}"
 
-    # 3. Resolve prompt
-    prompt = prompt_override or build_default_prompt(project.template_key)
+    # 3. Resolve prompt (override > active version > template default)
+    prompt = await resolve_prompt(db, project=project, prompt_override=prompt_override)
 
     # 4. Call engine
     file_path = str(storage.absolute_path(document.file_path))
