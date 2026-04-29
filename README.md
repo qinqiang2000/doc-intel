@@ -123,9 +123,14 @@ ApiAnything/
 │   │   └── lib/                 # 工具函数（axios, toast, utils）
 │   └── package.json
 │
-└── testing/
-    ├── test_e2e.py              # E2E 测试脚本
-    └── test1_honor/             # 测试文件
+├── docs/
+│   ├── design-v2.md             # UX 圣经
+│   ├── superpowers/             # 当前活的 specs/plans（S0-S5）
+│   ├── acceptance/              # 手工验收指引
+│   └── legacy/                  # 早期设计文档与原型（已被 superpowers/ 取代）
+│
+└── scripts/
+    └── run-dev.sh               # 一键启动前后端
 ```
 
 ---
@@ -172,20 +177,17 @@ curl -X POST http://localhost:8000/api/v1/extract/invoice-v1 \
 
 ---
 
-## 运行测试
+## 测试
 
 ```bash
-# 启动后端后执行
-python testing/test_e2e.py
+# 后端单元/集成测试
+cd backend && uv run pytest
 
-# 指定服务器地址
-python testing/test_e2e.py --base-url http://localhost:8000
-
-# 保留测试数据（不自动清理）
-python testing/test_e2e.py --no-cleanup
+# 前端单元测试
+cd frontend && npm test
 ```
 
-测试覆盖：健康检查 → 上传文档 → 获取结果 → 创建 Key → 创建 API 定义 → 激活 → 调用提取 → 标注 CRUD → 清理
+E2E 手工验收（含真 Gemini 调用）见 [`docs/acceptance/2026-04-29-e2e-manual-acceptance.md`](docs/acceptance/2026-04-29-e2e-manual-acceptance.md)。
 
 ---
 
