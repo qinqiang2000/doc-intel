@@ -1,7 +1,7 @@
 import { usePredictStore } from "../../stores/predict-store";
 
 interface Step {
-  id: 0 | 1 | 2 | 3;
+  id: 0 | 1 | 2 | 3 | 4;
   label: string;
 }
 const REACHABLE_STEPS: Step[] = [
@@ -9,15 +9,16 @@ const REACHABLE_STEPS: Step[] = [
   { id: 1, label: "Preview" },
   { id: 2, label: "Correct" },
   { id: 3, label: "ApiFormat" },
+  { id: 4, label: "Tune" },
 ];
 const LOCKED_STEPS = [
-  { id: 4, label: "Tune" },
   { id: 5, label: "GenerateAPI" },
 ];
 
 export default function StepIndicator() {
   const currentStep = usePredictStore((s) => s.currentStep);
   const setStep = usePredictStore((s) => s.setStep);
+  const setCorrectionConsoleOpen = usePredictStore((s) => s.setCorrectionConsoleOpen);
 
   return (
     <div className="bg-[#0f1117] border-b border-[#2a2e3d] px-4 py-2 flex items-center gap-1 text-xs">
@@ -34,7 +35,10 @@ export default function StepIndicator() {
             key={s.id}
             type="button"
             aria-current={isCurrent ? "step" : undefined}
-            onClick={() => setStep(s.id)}
+            onClick={() => {
+              setStep(s.id);
+              if (s.id === 4) setCorrectionConsoleOpen(true);
+            }}
             className={`${cls} px-3 py-1 rounded hover:border-[#818cf8] hover:border`}
           >
             {s.id + 1}. {s.label}

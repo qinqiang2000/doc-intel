@@ -16,6 +16,8 @@ export default function WorkspaceToolbar({
 }: Props) {
   const navigate = useNavigate();
   const loadNextUnreviewed = usePredictStore((s) => s.loadNextUnreviewed);
+  const setPromptHistoryOpen = usePredictStore((s) => s.setPromptHistoryOpen);
+  const promptHistoryOpen = usePredictStore((s) => s.promptHistoryOpen);
   const [open, setOpen] = useState(false);
 
   const idx = documents.findIndex((d) => d.id === currentDocId);
@@ -99,6 +101,14 @@ export default function WorkspaceToolbar({
         className="text-xs text-[#6366f1] hover:underline ml-auto"
       >
         ▶ Next Unreviewed
+      </button>
+      <button
+        type="button"
+        onClick={() => setPromptHistoryOpen(!promptHistoryOpen)}
+        title="Prompt 历史"
+        className="text-xs text-[#94a3b8] hover:text-[#e2e8f0]"
+      >
+        📜
       </button>
     </div>
   );

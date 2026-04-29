@@ -23,14 +23,15 @@ describe("StepIndicator", () => {
     }
   });
 
-  it("renders 🔒 on Tune and GenerateAPI", () => {
+  it("renders 🔒 on GenerateAPI only (Tune is now reachable)", () => {
     render(<StepIndicator />);
-    const tune = screen.getByRole("button", { name: /Tune/ });
     const gen = screen.getByRole("button", { name: /GenerateAPI/ });
-    expect(tune.textContent).toMatch(/🔒/);
     expect(gen.textContent).toMatch(/🔒/);
-    expect(tune).toBeDisabled();
     expect(gen).toBeDisabled();
+
+    const tune = screen.getByRole("button", { name: /Tune/ });
+    expect(tune.textContent).not.toMatch(/🔒/);
+    expect(tune).not.toBeDisabled();
   });
 
   it("clicking a reachable step calls setStep with that id", async () => {
@@ -51,5 +52,19 @@ describe("StepIndicator", () => {
     expect(screen.getByRole("button", { name: /Upload/ })).not.toHaveAttribute(
       "aria-current"
     );
+  });
+
+  it("clicking Tune sets currentStep to 4 and opens correctionConsole", async () => {
+    const user = userEvent.setup();
+    render(<StepIndicator />);
+    await user.click(screen.getByRole("button", { name: /Tune/ }));
+    expect(usePredictStore.getState().currentStep).toBe(4);
+    expect(usePredictStore.getState().correctionConsoleOpen).toBe(true);
+  });
+
+  it("Tune button shows aria-current when currentStep is 4", () => {
+    usePredictStore.setState({ currentStep: 4 });
+    render(<StepIndicator />);
+    expect(screen.getByRole("button", { name: /Tune/ })).toHaveAttribute("aria-current", "step");
   });
 });

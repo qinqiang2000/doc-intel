@@ -94,12 +94,12 @@ interface PredictState {
   results: Record<string, ProcessingResult>;
   batchProgress: BatchProgress | null;
   selectedAnnotationId: string | null;
-  currentStep: 0 | 1 | 2 | 3;
+  currentStep: 0 | 1 | 2 | 3 | 4;
   apiFormat: "flat" | "detailed" | "grouped";
   processorOverride: string;
   promptOverride: string;
   setSelectedAnnotationId: (id: string | null) => void;
-  setStep: (step: 0 | 1 | 2 | 3) => void;
+  setStep: (step: 0 | 1 | 2 | 3 | 4) => void;
   setApiFormat: (f: "flat" | "detailed" | "grouped") => void;
   setProcessorOverride: (s: string) => void;
   setPromptOverride: (s: string) => void;

@@ -98,4 +98,18 @@ describe("WorkspaceToolbar", () => {
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();
   });
+
+  it("renders 📜 history button toggling promptHistoryOpen", async () => {
+    const user = userEvent.setup();
+    renderToolbar();
+    expect(usePredictStore.getState().promptHistoryOpen).toBe(false);
+    await user.click(screen.getByRole("button", { name: /📜/ }));
+    expect(usePredictStore.getState().promptHistoryOpen).toBe(true);
+  });
+
+  it("📜 button has title attribute for accessibility", () => {
+    renderToolbar();
+    const btn = screen.getByRole("button", { name: /📜/ });
+    expect(btn.getAttribute("title")).toMatch(/Prompt|历史/i);
+  });
 });
