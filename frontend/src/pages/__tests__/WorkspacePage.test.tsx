@@ -276,4 +276,70 @@ describe("WorkspacePage", () => {
       expect(await screen.findByText(new RegExp(label))).toBeInTheDocument();
     }
   });
+
+  it("clicking Tune step opens NLCorrectionConsole below", async () => {
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1,
+      structured_data: { x: 1 }, inferred_schema: null,
+      prompt_used: "p", processor_key: "mock|m", source: "predict",
+      created_by: "u-1", created_at: "",
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+
+    const user = userEvent.setup();
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    const tuneBtn = await screen.findByRole("button", { name: /Tune/ });
+    await user.click(tuneBtn);
+    expect(usePredictStore.getState().correctionConsoleOpen).toBe(true);
+    expect(screen.getByPlaceholderText(/自然语言/)).toBeInTheDocument();
+  });
+
+  it("clicking 📜 toolbar button opens PromptHistoryPanel", async () => {
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1, structured_data: {},
+      inferred_schema: null, prompt_used: "", processor_key: "mock|m",
+      source: "predict", created_by: "u-1", created_at: "",
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+    mock.onGet("/api/v1/projects/p-1/prompt-versions").reply(200, []);
+
+    const user = userEvent.setup();
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    const histBtn = await screen.findByRole("button", { name: /📜/ });
+    await user.click(histBtn);
+    expect(await screen.findByText(/Prompt 历史/)).toBeInTheDocument();
+  });
+
+  it("PromptHistoryPanel + NLCorrectionConsole can be open simultaneously", async () => {
+    usePredictStore.setState({
+      promptHistoryOpen: true,
+      correctionConsoleOpen: true,
+    });
+    mock.onGet("/api/v1/projects/p-1/documents/d-1").reply(200, docFixture("d-1"));
+    mock.onGet(/d-1\/preview$/).reply(200, new Blob(["pdf"], { type: "application/pdf" }));
+    mock.onGet("/api/v1/documents/d-1/annotations").reply(200, []);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      id: "pr-1", document_id: "d-1", version: 1, structured_data: {},
+      inferred_schema: null, prompt_used: "", processor_key: "mock|m",
+      source: "predict", created_by: "u-1", created_at: "",
+    });
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, {
+      items: [docFixture("d-1")], total: 1, page: 1, page_size: 20,
+    });
+    mock.onGet("/api/v1/projects/p-1/prompt-versions").reply(200, []);
+
+    renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
+    expect(await screen.findByText(/Prompt 历史/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/自然语言/)).toBeInTheDocument();
+  });
 });

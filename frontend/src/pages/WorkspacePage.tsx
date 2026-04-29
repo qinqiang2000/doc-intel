@@ -7,6 +7,8 @@ import DocumentCanvas from "../components/workspace/DocumentCanvas";
 import JsonPreview from "../components/workspace/JsonPreview";
 import StepIndicator from "../components/workspace/StepIndicator";
 import WorkspaceToolbar from "../components/workspace/WorkspaceToolbar";
+import PromptHistoryPanel from "../components/workspace/PromptHistoryPanel";
+import NLCorrectionConsole from "../components/workspace/NLCorrectionConsole";
 import AnnotationEditor from "../components/predict/AnnotationEditor";
 import {
   usePredictStore,
@@ -281,6 +283,14 @@ export default function WorkspacePage() {
           />
         </div>
       </div>
+      <PromptHistoryPanel projectId={pid ?? ""} />
+      <NLCorrectionConsole
+        projectId={pid ?? ""}
+        documentId={docId}
+        currentPrompt={result?.prompt_used ?? ""}
+        annotations={annotations}
+        currentResult={result ? { structured_data: result.structured_data } : null}
+      />
     </div>
   );
 }
