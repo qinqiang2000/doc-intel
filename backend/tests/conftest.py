@@ -41,6 +41,7 @@ async def db_engine(tmp_path):
     # Ensure all models are registered with Base.metadata for tests using db_session.
     from app.models import project, document, prompt_version  # noqa: F401
     from app.models import evaluation_run, evaluation_field_result  # noqa: F401
+    from app.models import api_key  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

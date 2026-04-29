@@ -48,6 +48,12 @@ class Project(Base, TimestampMixin):
     published_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    api_published_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True,
+    )
+    api_disabled_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True,
+    )
 
     documents: Mapped[list["Document"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
