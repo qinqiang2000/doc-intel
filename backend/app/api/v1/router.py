@@ -8,6 +8,7 @@ from app.api.v1 import auth as auth_module
 from app.api.v1 import correction as correction_module
 from app.api.v1 import documents as documents_module
 from app.api.v1 import engine as engine_module
+from app.api.v1 import evaluations as evaluations_module
 from app.api.v1 import predict as predict_module
 from app.api.v1 import projects as projects_module
 from app.api.v1 import prompts as prompts_module
@@ -25,3 +26,5 @@ v1_router.include_router(templates_module.router)
 v1_router.include_router(predict_module.router)
 v1_router.include_router(prompts_module.router)
 v1_router.include_router(correction_module.router)
+v1_router.include_router(evaluations_module.project_router)
+v1_router.include_router(evaluations_module.run_router)
