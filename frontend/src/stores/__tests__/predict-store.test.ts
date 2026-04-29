@@ -30,6 +30,13 @@ beforeEach(() => {
     apiFormat: "flat",
     processorOverride: "",
     promptOverride: "",
+    promptVersions: [],
+    correctionStream: {
+      active: false, promptTokens: [], revisedPrompt: null,
+      previewResult: null, error: null,
+    },
+    promptHistoryOpen: false,
+    correctionConsoleOpen: false,
   });
 });
 
@@ -131,6 +138,64 @@ describe("predict-store", () => {
     it("setPromptOverride updates promptOverride", () => {
       usePredictStore.getState().setPromptOverride("custom prompt");
       expect(usePredictStore.getState().promptOverride).toBe("custom prompt");
+    });
+  });
+
+  describe("S3 prompt-version + correction state", () => {
+    it("loadPromptVersions GETs and stores", async () => {
+      const versions = [
+        {
+          id: "v-1", project_id: "p-1", version: 1,
+          prompt_text: "first", summary: "x",
+          created_by: "u-1", created_at: "",
+          is_active: true,
+        },
+      ];
+      mock.onGet("/api/v1/projects/p-1/prompt-versions").reply(200, versions);
+      const out = await usePredictStore.getState().loadPromptVersions("p-1");
+      expect(out).toEqual(versions);
+      expect(usePredictStore.getState().promptVersions).toEqual(versions);
+    });
+
+    it("saveAsNewVersion POSTs and returns the row", async () => {
+      mock.onPost("/api/v1/projects/p-1/prompt-versions").reply(201, {
+        id: "v-2", project_id: "p-1", version: 2,
+        prompt_text: "rev", summary: "fix tax-id",
+        created_by: "u-1", created_at: "",
+        is_active: false,
+      });
+      const out = await usePredictStore
+        .getState()
+        .saveAsNewVersion("p-1", "rev", "fix tax-id");
+      expect(out.version).toBe(2);
+      expect(out.summary).toBe("fix tax-id");
+    });
+
+    it("setActivePrompt PATCHes and returns active id", async () => {
+      mock.onPatch("/api/v1/projects/p-1/active-prompt").reply(200, {
+        id: "p-1", active_prompt_version_id: "v-1",
+      });
+      const out = await usePredictStore.getState().setActivePrompt("p-1", "v-1");
+      expect(out.active_prompt_version_id).toBe("v-1");
+    });
+
+    it("discardCorrection resets correctionStream", () => {
+      usePredictStore.setState({
+        correctionStream: {
+          active: false,
+          promptTokens: ["a", "b"],
+          revisedPrompt: "ab",
+          previewResult: { structured_data: { x: 1 }, annotations: [] },
+          error: null,
+        },
+      });
+      usePredictStore.getState().discardCorrection();
+      const s = usePredictStore.getState().correctionStream;
+      expect(s.promptTokens).toEqual([]);
+      expect(s.revisedPrompt).toBeNull();
+      expect(s.previewResult).toBeNull();
+      expect(s.active).toBe(false);
+      expect(s.error).toBeNull();
     });
   });
 });

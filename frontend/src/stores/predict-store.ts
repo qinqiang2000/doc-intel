@@ -32,6 +32,28 @@ export interface Annotation {
   updated_at: string;
 }
 
+export interface PromptVersion {
+  id: string;
+  project_id: string;
+  version: number;
+  prompt_text: string;
+  summary: string;
+  created_by: string;
+  created_at: string;
+  is_active: boolean;
+}
+
+export interface CorrectionStreamState {
+  active: boolean;
+  promptTokens: string[];
+  revisedPrompt: string | null;
+  previewResult: {
+    structured_data: Record<string, unknown>;
+    annotations: unknown[];
+  } | null;
+  error: string | null;
+}
+
 export interface PredictOptions {
   promptOverride?: string;
   processorKeyOverride?: string;
@@ -95,9 +117,31 @@ interface PredictState {
   deleteAnnotation: (documentId: string, annotationId: string) => Promise<void>;
   addAnnotation: (documentId: string, input: NewAnnotation) => Promise<Annotation>;
   loadNextUnreviewed: (projectId: string) => Promise<{ id: string; filename: string } | null>;
+
+  promptVersions: PromptVersion[];
+  correctionStream: CorrectionStreamState;
+  promptHistoryOpen: boolean;
+  correctionConsoleOpen: boolean;
+  loadPromptVersions: (projectId: string) => Promise<PromptVersion[]>;
+  saveAsNewVersion: (projectId: string, prompt_text: string, summary: string) => Promise<PromptVersion>;
+  deletePromptVersion: (projectId: string, versionId: string) => Promise<void>;
+  setActivePrompt: (projectId: string, versionId: string | null) => Promise<{ id: string; active_prompt_version_id: string | null }>;
+  streamCorrection: (
+    projectId: string,
+    documentId: string,
+    body: {
+      user_message: string;
+      current_prompt: string;
+      target_field?: string | null;
+      processor_key_override?: string | null;
+    },
+  ) => Promise<void>;
+  discardCorrection: () => void;
+  setPromptHistoryOpen: (open: boolean) => void;
+  setCorrectionConsoleOpen: (open: boolean) => void;
 }
 
-export const usePredictStore = create<PredictState>((set) => ({
+export const usePredictStore = create<PredictState>((set, get) => ({
   loading: {},
   results: {},
   batchProgress: null,
@@ -106,6 +150,13 @@ export const usePredictStore = create<PredictState>((set) => ({
   apiFormat: "flat",
   processorOverride: "",
   promptOverride: "",
+  promptVersions: [],
+  correctionStream: {
+    active: false, promptTokens: [], revisedPrompt: null,
+    previewResult: null, error: null,
+  },
+  promptHistoryOpen: false,
+  correctionConsoleOpen: false,
 
   setSelectedAnnotationId: (id) => set({ selectedAnnotationId: id }),
   setStep: (step) => set({ currentStep: step }),
@@ -207,4 +258,110 @@ export const usePredictStore = create<PredictState>((set) => ({
       throw err;
     }
   },
+
+  loadPromptVersions: async (projectId) => {
+    const r = await api.get<PromptVersion[]>(
+      `/api/v1/projects/${projectId}/prompt-versions`
+    );
+    set({ promptVersions: r.data });
+    return r.data;
+  },
+
+  saveAsNewVersion: async (projectId, prompt_text, summary) => {
+    const r = await api.post<PromptVersion>(
+      `/api/v1/projects/${projectId}/prompt-versions`,
+      { prompt_text, summary },
+    );
+    return r.data;
+  },
+
+  deletePromptVersion: async (projectId, versionId) => {
+    await api.delete(
+      `/api/v1/projects/${projectId}/prompt-versions/${versionId}`
+    );
+  },
+
+  setActivePrompt: async (projectId, versionId) => {
+    const r = await api.patch<{ id: string; active_prompt_version_id: string | null }>(
+      `/api/v1/projects/${projectId}/active-prompt`,
+      { version_id: versionId },
+    );
+    return r.data;
+  },
+
+  streamCorrection: async (projectId, documentId, body) => {
+    set({
+      correctionStream: {
+        active: true, promptTokens: [], revisedPrompt: null,
+        previewResult: null, error: null,
+      },
+    });
+    try {
+      const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8000";
+      const url = `${baseUrl}/api/v1/projects/${projectId}/documents/${documentId}/correct`;
+      const { streamSse } = await import("../lib/sse");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const token = getToken();
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      for await (const evt of streamSse<Record<string, unknown>>(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      })) {
+        const cs = get().correctionStream;
+        if (evt.event === "prompt_token") {
+          set({
+            correctionStream: {
+              ...cs,
+              promptTokens: [...cs.promptTokens, (evt.data as { chunk: string }).chunk],
+            },
+          });
+        } else if (evt.event === "revised_prompt") {
+          set({
+            correctionStream: {
+              ...cs,
+              revisedPrompt: (evt.data as { prompt_text: string }).prompt_text,
+            },
+          });
+        } else if (evt.event === "predict_result") {
+          set({
+            correctionStream: {
+              ...cs,
+              previewResult: evt.data as CorrectionStreamState["previewResult"],
+            },
+          });
+        } else if (evt.event === "error") {
+          set({
+            correctionStream: {
+              ...cs,
+              error: (evt.data as { message: string }).message,
+              active: false,
+            },
+          });
+          return;
+        } else if (evt.event === "done") {
+          set({ correctionStream: { ...get().correctionStream, active: false } });
+          return;
+        }
+      }
+    } catch (e) {
+      const cs = get().correctionStream;
+      set({
+        correctionStream: {
+          ...cs, active: false,
+          error: (e as { message?: string }).message ?? "stream failed",
+        },
+      });
+    }
+  },
+
+  discardCorrection: () => set({
+    correctionStream: {
+      active: false, promptTokens: [], revisedPrompt: null,
+      previewResult: null, error: null,
+    },
+  }),
+
+  setPromptHistoryOpen: (open) => set({ promptHistoryOpen: open }),
+  setCorrectionConsoleOpen: (open) => set({ correctionConsoleOpen: open }),
 }));
