@@ -253,4 +253,17 @@ describe("ProjectDocumentsPage", () => {
     );
     alertSpy.mockRestore();
   });
+
+  it("clicking 📊 Evaluate navigates to evaluate page", async () => {
+    mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, docList([
+      docFixture("d-1"),
+    ]));
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("d-1.pdf");
+    await user.click(screen.getByRole("button", { name: /Evaluate/i }));
+    expect(navigateMock).toHaveBeenCalledWith(
+      "/workspaces/demo/projects/p-1/evaluate"
+    );
+  });
 });

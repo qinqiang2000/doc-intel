@@ -36,6 +36,9 @@ vi.mock("../pages/WorkspaceSettingsPage", () => ({
 vi.mock("../pages/WorkspacePage", () => ({
   default: () => <div data-testid="page-workspace">workspace</div>,
 }));
+vi.mock("../pages/EvaluatePage", () => ({
+  default: () => <div data-testid="page-evaluate">evaluate</div>,
+}));
 vi.mock("../components/layout/AppShell", () => ({
   default: () => {
     const { Outlet } = require("react-router-dom");
@@ -128,5 +131,12 @@ describe("App routing", () => {
     window.history.pushState({}, "", "/workspaces/demo/projects/p-1/workspace?doc=d-1");
     render(<App />);
     expect(screen.getByTestId("page-workspace")).toBeInTheDocument();
+  });
+
+  it("/workspaces/:slug/projects/:pid/evaluate renders EvaluatePage when authed", () => {
+    mockState.token = "tok";
+    window.history.pushState({}, "", "/workspaces/demo/projects/p-1/evaluate");
+    render(<App />);
+    expect(screen.getByTestId("page-evaluate")).toBeInTheDocument();
   });
 });

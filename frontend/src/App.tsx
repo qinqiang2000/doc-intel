@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import EvaluatePage from "./pages/EvaluatePage";
 import ProjectCreatePage from "./pages/ProjectCreatePage";
 import ProjectDocumentsPage from "./pages/ProjectDocumentsPage";
 import ProjectListPage from "./pages/ProjectListPage";
@@ -61,6 +62,7 @@ export default function App() {
             element={<WorkspacePage />}
           />
           <Route path="/workspaces/:slug/projects/:pid/settings" element={<ProjectSettingsPage />} />
+          <Route path="/workspaces/:slug/projects/:pid/evaluate" element={<EvaluatePage />} />
         </Route>
 
         <Route path="*" element={<RootRedirect />} />
