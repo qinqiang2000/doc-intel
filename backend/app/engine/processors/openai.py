@@ -45,6 +45,26 @@ class OpenAIDocumentProcessor(DocumentProcessor):
         """Get current model version"""
         return f"openai|{self.model_name}"
 
+    async def chat_stream(self, *, system: str, user: str):
+        """Stream LLM tokens via AsyncOpenAI."""
+        if not self.client:
+            raise RuntimeError("OpenAI client not initialized")
+        stream = await self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            stream=True,
+        )
+        async for chunk in stream:
+            try:
+                delta = chunk.choices[0].delta.content
+            except (IndexError, AttributeError):
+                continue
+            if delta:
+                yield delta
+
     def _supports_temperature(self) -> bool:
         """
         Check if current model supports temperature parameter.

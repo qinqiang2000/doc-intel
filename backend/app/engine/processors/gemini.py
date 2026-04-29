@@ -237,3 +237,33 @@ class GeminiProcessor(DocumentProcessor):
 
     def get_model_version(self) -> str:
         return f"gemini|{self.model_name}"
+
+    async def chat_stream(self, *, system: str, user: str):
+        """Stream LLM tokens via google.genai aio API."""
+        from google.genai import types as _types
+        try:
+            stream = await self.client.aio.models.generate_content_stream(
+                model=self.model_name,
+                contents=[user],
+                config=_types.GenerateContentConfig(
+                    system_instruction=system,
+                    temperature=0.0,
+                ),
+            )
+            async for chunk in stream:
+                text = getattr(chunk, "text", None)
+                if text:
+                    yield text
+        except AttributeError:
+            # SDK may not expose generate_content_stream; fall back to non-stream
+            r = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=[user],
+                config=_types.GenerateContentConfig(
+                    system_instruction=system,
+                    temperature=0.0,
+                ),
+            )
+            text = getattr(r, "text", None)
+            if text:
+                yield text

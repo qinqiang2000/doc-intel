@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from typing import AsyncIterator
 
 from app.engine.processors.base import DocumentProcessor
 from app.engine.utils import get_mock_invoice_data
@@ -22,3 +23,8 @@ class MockProcessor(DocumentProcessor):
 
     def get_model_version(self) -> str:
         return f"mock|{self.model_name}"
+
+    async def chat_stream(self, *, system: str, user: str) -> AsyncIterator[str]:
+        """Deterministic 3-chunk stream: 'REVISED: ' + user + ' END'."""
+        for chunk in ("REVISED: ", user, " END"):
+            yield chunk

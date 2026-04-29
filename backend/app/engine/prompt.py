@@ -305,3 +305,47 @@ analysis_prompt = """
 格式要求：
 以Html格式返回。直接返回报告内容，不要加其他回复。
 """
+
+
+from typing import AsyncIterator
+import logging
+
+from app.engine.processors.factory import DocumentProcessorFactory
+
+logger = logging.getLogger(__name__)
+
+
+_REVISE_SYSTEM = (
+    "你是一个 prompt 工程师。用户正在迭代一个文档抽取 prompt。"
+    "给定原始 prompt、用户的修改需求、可选的目标字段，"
+    "生成一个修改后的 prompt：保持整体结构与字段集，仅按需求最小修改。"
+    "只输出修改后的 prompt 正文，不要前后说明。"
+)
+
+
+async def revise_prompt(
+    *,
+    original_prompt: str,
+    user_message: str,
+    target_field: str | None,
+    processor_key: str,
+) -> AsyncIterator[str]:
+    """Stream tokens of a revised prompt via the chosen processor's chat API."""
+    parts = processor_key.split("|", 1)
+    p_type = parts[0]
+    p_kwargs = {"model_name": parts[1]} if len(parts) == 2 else {}
+    available = set(DocumentProcessorFactory.get_available())
+    if p_type not in available:
+        raise ValueError(
+            f"Processor '{p_type}' is not available. Available: {sorted(available)}"
+        )
+    processor = DocumentProcessorFactory.create(p_type, **p_kwargs)
+
+    user_payload = (
+        f"ORIGINAL:\n{original_prompt}\n\n"
+        f"REVISION REQUEST:\n{user_message}\n\n"
+        f"TARGET FIELD: {target_field or 'unspecified'}"
+    )
+
+    async for chunk in processor.chat_stream(system=_REVISE_SYSTEM, user=user_payload):
+        yield chunk
