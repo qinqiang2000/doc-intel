@@ -59,8 +59,15 @@ class ProjectRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None = None
+    api_code: str | None = None
+    api_published_at: datetime | None = None
+    api_disabled_at: datetime | None = None
 
 
 class ProjectDetail(ProjectRead):
     template: TemplateRead | None
     document_count: int
+
+
+class PublishRequest(BaseModel):
+    api_code: str = Field(min_length=3, max_length=60)

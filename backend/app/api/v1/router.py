@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.api.v1 import annotations as annotations_module
+from app.api.v1 import api_publish as api_publish_module
 from app.api.v1 import auth as auth_module
 from app.api.v1 import correction as correction_module
 from app.api.v1 import documents as documents_module
@@ -28,3 +29,4 @@ v1_router.include_router(prompts_module.router)
 v1_router.include_router(correction_module.router)
 v1_router.include_router(evaluations_module.project_router)
 v1_router.include_router(evaluations_module.run_router)
+v1_router.include_router(api_publish_module.router)
