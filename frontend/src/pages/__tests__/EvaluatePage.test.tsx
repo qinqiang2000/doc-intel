@@ -141,4 +141,108 @@ describe("EvaluatePage", () => {
     await waitFor(() => expect(deleted).toBe(true));
     await waitFor(() => expect(screen.queryByText(/100\.0%/)).not.toBeInTheDocument());
   });
+
+  it("clicking a run row loads detail and shows per-field summary", async () => {
+    mock.onGet("/api/v1/projects/p-1/evaluations").reply(200, [
+      {
+        id: "r-1", project_id: "p-1", prompt_version_id: null,
+        name: "", num_docs: 1, num_fields_evaluated: 2, num_matches: 1,
+        accuracy_avg: 0.5, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      },
+    ]);
+    mock.onGet("/api/v1/evaluations/r-1").reply(200, {
+      run: {
+        id: "r-1", project_id: "p-1", prompt_version_id: null,
+        name: "", num_docs: 1, num_fields_evaluated: 2, num_matches: 1,
+        accuracy_avg: 0.5, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      },
+      fields: [
+        {
+          id: "f-1", run_id: "r-1", document_id: "d-1",
+          document_filename: "a.pdf", field_name: "invoice_number",
+          predicted_value: "INV-1", expected_value: "INV-1",
+          match_status: "exact", created_at: "",
+        },
+        {
+          id: "f-2", run_id: "r-1", document_id: "d-1",
+          document_filename: "a.pdf", field_name: "total",
+          predicted_value: "100", expected_value: "200",
+          match_status: "mismatch", created_at: "",
+        },
+      ],
+    });
+
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const user = userEvent.setup();
+    renderPage("/workspaces/demo/projects/p-1/evaluate");
+    await screen.findByText(/50\.0%/);
+    await user.click(screen.getByText(/50\.0%/));
+    await screen.findByText(/Per-field summary/i);
+    expect(screen.getByText("invoice_number")).toBeInTheDocument();
+    expect(screen.getByText("total")).toBeInTheDocument();
+  });
+
+  it("expands per-doc rows when 'Show per-doc rows' clicked", async () => {
+    mock.onGet("/api/v1/projects/p-1/evaluations").reply(200, [
+      {
+        id: "r-1", project_id: "p-1", prompt_version_id: null,
+        name: "", num_docs: 1, num_fields_evaluated: 1, num_matches: 1,
+        accuracy_avg: 1, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      },
+    ]);
+    mock.onGet("/api/v1/evaluations/r-1").reply(200, {
+      run: {
+        id: "r-1", project_id: "p-1", prompt_version_id: null,
+        name: "", num_docs: 1, num_fields_evaluated: 1, num_matches: 1,
+        accuracy_avg: 1, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      },
+      fields: [{
+        id: "f-1", run_id: "r-1", document_id: "d-1",
+        document_filename: "alpha.pdf", field_name: "invoice_number",
+        predicted_value: "INV-1", expected_value: "INV-1",
+        match_status: "exact", created_at: "",
+      }],
+    });
+
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const user = userEvent.setup();
+    renderPage("/workspaces/demo/projects/p-1/evaluate");
+    await screen.findByText(/100\.0%/);
+    await user.click(screen.getByText(/100\.0%/));
+    await user.click(screen.getByText(/Show per-doc rows/i));
+    expect(screen.getByText("alpha.pdf")).toBeInTheDocument();
+  });
+
+  it("clicking 📥 invokes downloadEvaluationExcel", async () => {
+    mock.onGet("/api/v1/projects/p-1/evaluations").reply(200, [
+      {
+        id: "r-1", project_id: "p-1", prompt_version_id: null,
+        name: "", num_docs: 1, num_fields_evaluated: 1, num_matches: 1,
+        accuracy_avg: 1, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      },
+    ]);
+    let excelCalled = false;
+    mock.onGet("/api/v1/evaluations/r-1/excel").reply(() => {
+      excelCalled = true;
+      return [200, new Blob(["xlsx"], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      })];
+    });
+    // Stub createObjectURL/revokeObjectURL — jsdom doesn't implement them
+    URL.createObjectURL = vi.fn(() => "blob:http://x") as unknown as typeof URL.createObjectURL;
+    URL.revokeObjectURL = vi.fn() as unknown as typeof URL.revokeObjectURL;
+
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const user = userEvent.setup();
+    renderPage("/workspaces/demo/projects/p-1/evaluate");
+    await screen.findByTitle(/Download Excel/i);
+    await user.click(screen.getByTitle(/Download Excel/i));
+    const { waitFor } = await import("@testing-library/react");
+    await waitFor(() => expect(excelCalled).toBe(true));
+  });
 });
