@@ -60,4 +60,85 @@ describe("EvaluatePage", () => {
     expect(await screen.findByRole("button", { name: /Run Evaluation/i })).toBeInTheDocument();
     expect(screen.getByText(/Back to Project|◀/i)).toBeInTheDocument();
   });
+
+  it("renders run history list with accuracy + counts", async () => {
+    mock.onGet("/api/v1/projects/p-1/evaluations").reply(200, [
+      {
+        id: "r-1", project_id: "p-1", prompt_version_id: null,
+        name: "first", num_docs: 2, num_fields_evaluated: 10, num_matches: 8,
+        accuracy_avg: 0.8, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      },
+    ]);
+    renderPage("/workspaces/demo/projects/p-1/evaluate");
+    await screen.findByText(/80\.0%/);
+    expect(screen.getByText(/2 docs/i)).toBeInTheDocument();
+    expect(screen.getByText(/10 fields/i)).toBeInTheDocument();
+  });
+
+  it("clicking Run Evaluation POSTs and refreshes list", async () => {
+    let listCall = 0;
+    mock.onGet("/api/v1/projects/p-1/evaluations").reply(() => {
+      listCall++;
+      if (listCall === 1) return [200, []];
+      return [200, [{
+        id: "r-new", project_id: "p-1", prompt_version_id: null,
+        name: "", num_docs: 1, num_fields_evaluated: 3, num_matches: 3,
+        accuracy_avg: 1.0, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      }]];
+    });
+    mock.onPost("/api/v1/projects/p-1/evaluations").reply(201, {
+      id: "r-new", project_id: "p-1", prompt_version_id: null,
+      name: "", num_docs: 1, num_fields_evaluated: 3, num_matches: 3,
+      accuracy_avg: 1.0, status: "completed", error_message: null,
+      created_by: "u-1", created_at: "",
+    });
+    mock.onGet("/api/v1/evaluations/r-new").reply(200, {
+      run: {
+        id: "r-new", project_id: "p-1", prompt_version_id: null,
+        name: "", num_docs: 1, num_fields_evaluated: 3, num_matches: 3,
+        accuracy_avg: 1.0, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      },
+      fields: [],
+    });
+
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const user = userEvent.setup();
+    renderPage("/workspaces/demo/projects/p-1/evaluate");
+    await screen.findByRole("button", { name: /Run Evaluation/i });
+    await user.click(screen.getByRole("button", { name: /Run Evaluation/i }));
+    const { waitFor } = await import("@testing-library/react");
+    await waitFor(() => expect(screen.getByText(/100\.0%/)).toBeInTheDocument());
+  });
+
+  it("clicking 🗑 deletes the run and refreshes list", async () => {
+    let listCall = 0;
+    mock.onGet("/api/v1/projects/p-1/evaluations").reply(() => {
+      listCall++;
+      if (listCall === 1) return [200, [{
+        id: "r-1", project_id: "p-1", prompt_version_id: null,
+        name: "", num_docs: 1, num_fields_evaluated: 1, num_matches: 1,
+        accuracy_avg: 1, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      }]];
+      return [200, []];
+    });
+    let deleted = false;
+    mock.onDelete("/api/v1/evaluations/r-1").reply(() => {
+      deleted = true;
+      return [204, ""];
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const user = userEvent.setup();
+    renderPage("/workspaces/demo/projects/p-1/evaluate");
+    await screen.findByText(/100\.0%/);
+    await user.click(screen.getByTitle(/Delete run/i));
+    const { waitFor } = await import("@testing-library/react");
+    await waitFor(() => expect(deleted).toBe(true));
+    await waitFor(() => expect(screen.queryByText(/100\.0%/)).not.toBeInTheDocument());
+  });
 });
