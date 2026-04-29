@@ -45,6 +45,10 @@ from app.api.v1.router import v1_router  # noqa: E402
 
 app.include_router(v1_router)
 
+from app.api.v1.extract_public import router as extract_router  # noqa: E402
+
+app.include_router(extract_router)
+
 # Serve uploaded files
 _upload_dir = Path(settings.UPLOAD_DIR)
 _upload_dir.mkdir(parents=True, exist_ok=True)

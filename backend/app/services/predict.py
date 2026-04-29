@@ -179,6 +179,11 @@ async def predict_single(
     prompt_override: str | None = None,
     processor_key_override: str | None = None,
 ) -> ProcessingResult:
+    # Honor test/dev mock override via env
+    from app.engine.utils import should_use_mock_data
+    if should_use_mock_data():
+        processor_key_override = "mock"
+
     # 1. Resolve processor_key
     if processor_key_override:
         processor_key = processor_key_override
