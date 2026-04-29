@@ -56,7 +56,7 @@ describe("PromptHistoryPanel", () => {
       promptVersions: [pv({ is_active: false })],
     });
     let patched = false;
-    mock.onPatch("/api/v1/projects/p-1/active-prompt").reply((cfg) => {
+    mock.onPatch("/api/v1/projects/p-1/active-prompt").reply(() => {
       patched = true;
       return [200, { id: "p-1", active_prompt_version_id: "v-1" }];
     });
