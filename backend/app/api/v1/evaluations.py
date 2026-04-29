@@ -1,9 +1,11 @@
 """Evaluations router under /api/v1."""
 from __future__ import annotations
 
+import io as _io
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DbSession
@@ -19,6 +21,7 @@ from app.schemas.evaluation import (
     EvaluationRunRead,
 )
 from app.services import evaluation_service
+from app.services.evaluation_excel import render_run_xlsx
 
 # Project-scoped (POST + list)
 project_router = APIRouter(prefix="/projects/{project_id}", tags=["evaluations"])
@@ -115,3 +118,24 @@ async def delete_evaluation(
     run = await _load_run_with_access(db, run_id, user.id)
     run.deleted_at = datetime.now(timezone.utc)
     await db.commit()
+
+
+@run_router.get("/{run_id}/excel")
+async def download_evaluation_excel(
+    run_id: str, db: DbSession, user: CurrentUser,
+) -> StreamingResponse:
+    run = await _load_run_with_access(db, run_id, user.id)
+    if run.status != "completed":
+        raise AppError(409, "evaluation_failed", "Cannot export a failed evaluation.")
+    fields_stmt = select(EvaluationFieldResult).where(
+        EvaluationFieldResult.run_id == run.id,
+    )
+    fields = (await db.execute(fields_stmt)).scalars().all()
+    xlsx_bytes = render_run_xlsx(run, fields)
+    return StreamingResponse(
+        _io.BytesIO(xlsx_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="evaluation-{run.id}.xlsx"',
+        },
+    )

@@ -108,3 +108,32 @@ async def test_delete_evaluation_returns_204(client, registered_user):
         f"/api/v1/evaluations/{rid}", headers=_auth(token),
     )
     assert r3.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_evaluation_excel_returns_xlsx_with_two_sheets(client, registered_user):
+    from openpyxl import load_workbook
+    import io as _io
+    _, token = registered_user
+    pid, _ = await _setup_with_doc(client, token)
+    r = await client.post(
+        f"/api/v1/projects/{pid}/evaluations", headers=_auth(token), json={},
+    )
+    rid = r.json()["id"]
+
+    r2 = await client.get(
+        f"/api/v1/evaluations/{rid}/excel", headers=_auth(token),
+    )
+    assert r2.status_code == 200, r2.text
+    assert r2.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    # Inspect via openpyxl
+    wb = load_workbook(_io.BytesIO(r2.content))
+    assert "Summary" in wb.sheetnames
+    assert "Detail" in wb.sheetnames
+    # Header row in Summary
+    summary = wb["Summary"]
+    headers = [cell.value for cell in next(summary.iter_rows(min_row=1, max_row=1))]
+    assert "field_name" in headers
+    assert "accuracy" in headers
