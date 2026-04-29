@@ -23,15 +23,11 @@ describe("StepIndicator", () => {
     }
   });
 
-  it("renders 🔒 on GenerateAPI only (Tune is now reachable)", () => {
+  it("renders GenerateAPI as reachable (no 🔒)", () => {
     render(<StepIndicator />);
     const gen = screen.getByRole("button", { name: /GenerateAPI/ });
-    expect(gen.textContent).toMatch(/🔒/);
-    expect(gen).toBeDisabled();
-
-    const tune = screen.getByRole("button", { name: /Tune/ });
-    expect(tune.textContent).not.toMatch(/🔒/);
-    expect(tune).not.toBeDisabled();
+    expect(gen.textContent).not.toMatch(/🔒/);
+    expect(gen).not.toBeDisabled();
   });
 
   it("clicking a reachable step calls setStep with that id", async () => {
@@ -66,5 +62,13 @@ describe("StepIndicator", () => {
     usePredictStore.setState({ currentStep: 4 });
     render(<StepIndicator />);
     expect(screen.getByRole("button", { name: /Tune/ })).toHaveAttribute("aria-current", "step");
+  });
+
+  it("clicking GenerateAPI sets currentStep to 5", async () => {
+    const userEvent = (await import("@testing-library/user-event")).default;
+    const user = userEvent.setup();
+    render(<StepIndicator />);
+    await user.click(screen.getByRole("button", { name: /GenerateAPI/ }));
+    expect(usePredictStore.getState().currentStep).toBe(5);
   });
 });

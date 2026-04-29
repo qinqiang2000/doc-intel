@@ -1,7 +1,7 @@
 import { usePredictStore } from "../../stores/predict-store";
 
 interface Step {
-  id: 0 | 1 | 2 | 3 | 4;
+  id: 0 | 1 | 2 | 3 | 4 | 5;
   label: string;
 }
 const REACHABLE_STEPS: Step[] = [
@@ -10,10 +10,9 @@ const REACHABLE_STEPS: Step[] = [
   { id: 2, label: "Correct" },
   { id: 3, label: "ApiFormat" },
   { id: 4, label: "Tune" },
-];
-const LOCKED_STEPS = [
   { id: 5, label: "GenerateAPI" },
 ];
+const LOCKED_STEPS: Step[] = [];
 
 export default function StepIndicator() {
   const currentStep = usePredictStore((s) => s.currentStep);
