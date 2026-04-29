@@ -198,4 +198,64 @@ describe("predict-store", () => {
       expect(s.error).toBeNull();
     });
   });
+
+  describe("S4 evaluation state", () => {
+    it("runEvaluation POSTs and returns the row", async () => {
+      mock.onPost("/api/v1/projects/p-1/evaluations").reply(201, {
+        id: "r-1", project_id: "p-1", prompt_version_id: null,
+        name: "first", num_docs: 1, num_fields_evaluated: 5, num_matches: 4,
+        accuracy_avg: 0.8, status: "completed", error_message: null,
+        created_by: "u-1", created_at: "",
+      });
+      const out = await usePredictStore.getState().runEvaluation("p-1", "first");
+      expect(out.accuracy_avg).toBe(0.8);
+      expect(out.name).toBe("first");
+    });
+
+    it("listEvaluations GETs the list", async () => {
+      mock.onGet("/api/v1/projects/p-1/evaluations").reply(200, [
+        {
+          id: "r-1", project_id: "p-1", prompt_version_id: null,
+          name: "x", num_docs: 1, num_fields_evaluated: 1, num_matches: 1,
+          accuracy_avg: 1, status: "completed", error_message: null,
+          created_by: "u-1", created_at: "",
+        },
+      ]);
+      const out = await usePredictStore.getState().listEvaluations("p-1");
+      expect(out.length).toBe(1);
+      expect(out[0].id).toBe("r-1");
+    });
+
+    it("getEvaluationDetail returns {run, fields}", async () => {
+      mock.onGet("/api/v1/evaluations/r-1").reply(200, {
+        run: {
+          id: "r-1", project_id: "p-1", prompt_version_id: null,
+          name: "", num_docs: 1, num_fields_evaluated: 1, num_matches: 1,
+          accuracy_avg: 1, status: "completed", error_message: null,
+          created_by: "u-1", created_at: "",
+        },
+        fields: [
+          {
+            id: "fr-1", run_id: "r-1", document_id: "d-1",
+            document_filename: "a.pdf", field_name: "invoice_number",
+            predicted_value: "INV-1", expected_value: "INV-1",
+            match_status: "exact", created_at: "",
+          },
+        ],
+      });
+      const out = await usePredictStore.getState().getEvaluationDetail("r-1");
+      expect(out.run.id).toBe("r-1");
+      expect(out.fields.length).toBe(1);
+    });
+
+    it("deleteEvaluation DELETEs", async () => {
+      let deleted = false;
+      mock.onDelete("/api/v1/evaluations/r-1").reply(() => {
+        deleted = true;
+        return [204, ""];
+      });
+      await usePredictStore.getState().deleteEvaluation("r-1");
+      expect(deleted).toBe(true);
+    });
+  });
 });

@@ -43,6 +43,33 @@ export interface PromptVersion {
   is_active: boolean;
 }
 
+export interface EvaluationRun {
+  id: string;
+  project_id: string;
+  prompt_version_id: string | null;
+  name: string;
+  num_docs: number;
+  num_fields_evaluated: number;
+  num_matches: number;
+  accuracy_avg: number;
+  status: "completed" | "failed";
+  error_message: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export interface EvaluationFieldResult {
+  id: string;
+  run_id: string;
+  document_id: string | null;
+  document_filename: string;
+  field_name: string;
+  predicted_value: string | null;
+  expected_value: string | null;
+  match_status: "exact" | "fuzzy" | "mismatch" | "missing_pred" | "missing_expected";
+  created_at: string;
+}
+
 export interface CorrectionStreamState {
   active: boolean;
   promptTokens: string[];
@@ -139,6 +166,12 @@ interface PredictState {
   discardCorrection: () => void;
   setPromptHistoryOpen: (open: boolean) => void;
   setCorrectionConsoleOpen: (open: boolean) => void;
+
+  runEvaluation: (projectId: string, name?: string) => Promise<EvaluationRun>;
+  listEvaluations: (projectId: string) => Promise<EvaluationRun[]>;
+  getEvaluationDetail: (runId: string) => Promise<{ run: EvaluationRun; fields: EvaluationFieldResult[] }>;
+  deleteEvaluation: (runId: string) => Promise<void>;
+  downloadEvaluationExcel: (runId: string) => Promise<void>;
 }
 
 export const usePredictStore = create<PredictState>((set, get) => ({
@@ -364,4 +397,45 @@ export const usePredictStore = create<PredictState>((set, get) => ({
 
   setPromptHistoryOpen: (open) => set({ promptHistoryOpen: open }),
   setCorrectionConsoleOpen: (open) => set({ correctionConsoleOpen: open }),
+
+  runEvaluation: async (projectId, name = "") => {
+    const r = await api.post<EvaluationRun>(
+      `/api/v1/projects/${projectId}/evaluations`,
+      { name },
+    );
+    return r.data;
+  },
+
+  listEvaluations: async (projectId) => {
+    const r = await api.get<EvaluationRun[]>(
+      `/api/v1/projects/${projectId}/evaluations`,
+    );
+    return r.data;
+  },
+
+  getEvaluationDetail: async (runId) => {
+    const r = await api.get<{ run: EvaluationRun; fields: EvaluationFieldResult[] }>(
+      `/api/v1/evaluations/${runId}`,
+    );
+    return r.data;
+  },
+
+  deleteEvaluation: async (runId) => {
+    await api.delete(`/api/v1/evaluations/${runId}`);
+  },
+
+  downloadEvaluationExcel: async (runId) => {
+    const r = await api.get<Blob>(
+      `/api/v1/evaluations/${runId}/excel`,
+      { responseType: "blob" },
+    );
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `evaluation-${runId}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  },
 }));
