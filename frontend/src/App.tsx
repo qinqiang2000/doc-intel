@@ -8,6 +8,7 @@ import ProjectCreatePage from "./pages/ProjectCreatePage";
 import ProjectDocumentsPage from "./pages/ProjectDocumentsPage";
 import ProjectListPage from "./pages/ProjectListPage";
 import ProjectSettingsPage from "./pages/ProjectSettingsPage";
+import PublishPage from "./pages/PublishPage";
 import WorkspaceCreatePage from "./pages/WorkspaceCreatePage";
 import WorkspacePage from "./pages/WorkspacePage";
 import WorkspaceSettingsPage from "./pages/WorkspaceSettingsPage";
@@ -63,6 +64,7 @@ export default function App() {
           />
           <Route path="/workspaces/:slug/projects/:pid/settings" element={<ProjectSettingsPage />} />
           <Route path="/workspaces/:slug/projects/:pid/evaluate" element={<EvaluatePage />} />
+          <Route path="/workspaces/:slug/projects/:pid/api" element={<PublishPage />} />
         </Route>
 
         <Route path="*" element={<RootRedirect />} />

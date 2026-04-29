@@ -192,6 +192,14 @@ export default function ProjectDocumentsPage() {
         >
           📊 Evaluate
         </button>
+        <button
+          type="button"
+          onClick={() => ws && navigate(`/workspaces/${ws.slug}/projects/${pid}/api`)}
+          className="text-xs text-[#6366f1] hover:underline"
+          title="API publish"
+        >
+          🔌 API
+        </button>
       </div>
 
       <div className="mt-6 mb-4 flex flex-wrap gap-3 items-center">

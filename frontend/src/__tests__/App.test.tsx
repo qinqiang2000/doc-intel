@@ -39,6 +39,9 @@ vi.mock("../pages/WorkspacePage", () => ({
 vi.mock("../pages/EvaluatePage", () => ({
   default: () => <div data-testid="page-evaluate">evaluate</div>,
 }));
+vi.mock("../pages/PublishPage", () => ({
+  default: () => <div data-testid="page-publish">publish</div>,
+}));
 vi.mock("../components/layout/AppShell", () => ({
   default: () => {
     const { Outlet } = require("react-router-dom");
@@ -138,5 +141,12 @@ describe("App routing", () => {
     window.history.pushState({}, "", "/workspaces/demo/projects/p-1/evaluate");
     render(<App />);
     expect(screen.getByTestId("page-evaluate")).toBeInTheDocument();
+  });
+
+  it("/workspaces/:slug/projects/:pid/api renders PublishPage when authed", () => {
+    mockState.token = "tok";
+    window.history.pushState({}, "", "/workspaces/demo/projects/p-1/api");
+    render(<App />);
+    expect(screen.getByTestId("page-publish")).toBeInTheDocument();
   });
 });
