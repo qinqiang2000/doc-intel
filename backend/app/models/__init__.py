@@ -3,6 +3,8 @@ from app.models.annotation import Annotation, AnnotationFieldType, AnnotationSou
 from app.models.annotation_revision import AnnotationRevision, RevisionAction
 from app.models.base import Base, TimestampMixin, gen_uuid
 from app.models.document import Document, DocumentStatus
+from app.models.evaluation_field_result import EvaluationFieldResult
+from app.models.evaluation_run import EvaluationRun
 from app.models.processing_result import ProcessingResult, ProcessingResultSource
 from app.models.project import Project
 from app.models.prompt_version import PromptVersion
@@ -15,6 +17,8 @@ __all__ = [
     "Annotation", "AnnotationFieldType", "AnnotationSource",
     "AnnotationRevision", "RevisionAction",
     "Document", "DocumentStatus",
+    "EvaluationFieldResult",
+    "EvaluationRun",
     "ProcessingResult", "ProcessingResultSource",
     "Project",
     "PromptVersion",
