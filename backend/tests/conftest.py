@@ -38,6 +38,8 @@ async def db_engine(tmp_path):
 
     from app.models.base import Base
     from app.models import user, workspace, workspace_member  # noqa: F401
+    # Ensure all models are registered with Base.metadata for tests using db_session.
+    from app.models import project, document, prompt_version  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -89,6 +91,47 @@ async def client(db_engine):
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def seed_user(db_session):
+    from app.core.security import hash_password
+    from app.models.user import User
+
+    u = User(
+        email="alice@example.com",
+        password_hash=hash_password("pass1234"),
+        display_name="Alice",
+    )
+    db_session.add(u)
+    await db_session.commit()
+    await db_session.refresh(u)
+    return u
+
+
+@pytest_asyncio.fixture
+async def seed_project(db_session, seed_user):
+    from app.models.project import Project
+    from app.models.workspace import Workspace
+    from app.models.workspace_member import WorkspaceMember, WorkspaceRole
+
+    ws = Workspace(name="Demo", slug="demo", owner_id=seed_user.id)
+    db_session.add(ws)
+    await db_session.flush()
+    db_session.add(
+        WorkspaceMember(workspace_id=ws.id, user_id=seed_user.id, role=WorkspaceRole.OWNER)
+    )
+    proj = Project(
+        workspace_id=ws.id,
+        name="Receipts",
+        slug="receipts",
+        template_key="china_vat",
+        created_by=seed_user.id,
+    )
+    db_session.add(proj)
+    await db_session.commit()
+    await db_session.refresh(proj)
+    return proj
 
 
 @pytest_asyncio.fixture

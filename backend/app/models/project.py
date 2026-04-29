@@ -27,6 +27,11 @@ class Project(Base, TimestampMixin):
     slug: Mapped[str] = mapped_column(String(60), nullable=False)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     template_key: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    active_prompt_version_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("prompt_versions.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_by: Mapped[str] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
