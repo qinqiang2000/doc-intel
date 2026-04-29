@@ -70,6 +70,28 @@ export interface EvaluationFieldResult {
   created_at: string;
 }
 
+export interface ApiKey {
+  id: string;
+  project_id: string;
+  name: string;
+  key_prefix: string;
+  is_active: boolean;
+  last_used_at: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export interface ApiKeyCreateResponse extends ApiKey {
+  key: string;
+}
+
+export interface ProjectApiState {
+  id: string;
+  api_code: string | null;
+  api_published_at: string | null;
+  api_disabled_at: string | null;
+}
+
 export interface CorrectionStreamState {
   active: boolean;
   promptTokens: string[];
@@ -172,6 +194,12 @@ interface PredictState {
   getEvaluationDetail: (runId: string) => Promise<{ run: EvaluationRun; fields: EvaluationFieldResult[] }>;
   deleteEvaluation: (runId: string) => Promise<void>;
   downloadEvaluationExcel: (runId: string) => Promise<void>;
+
+  publishApi: (projectId: string, apiCode: string) => Promise<ProjectApiState>;
+  unpublishApi: (projectId: string) => Promise<ProjectApiState>;
+  listApiKeys: (projectId: string) => Promise<ApiKey[]>;
+  createApiKey: (projectId: string, name: string) => Promise<ApiKeyCreateResponse>;
+  deleteApiKey: (projectId: string, keyId: string) => Promise<void>;
 }
 
 export const usePredictStore = create<PredictState>((set, get) => ({
@@ -437,5 +465,39 @@ export const usePredictStore = create<PredictState>((set, get) => ({
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 0);
+  },
+
+  publishApi: async (projectId, apiCode) => {
+    const r = await api.post<ProjectApiState>(
+      `/api/v1/projects/${projectId}/publish`,
+      { api_code: apiCode },
+    );
+    return r.data;
+  },
+
+  unpublishApi: async (projectId) => {
+    const r = await api.post<ProjectApiState>(
+      `/api/v1/projects/${projectId}/unpublish`,
+    );
+    return r.data;
+  },
+
+  listApiKeys: async (projectId) => {
+    const r = await api.get<ApiKey[]>(
+      `/api/v1/projects/${projectId}/api-keys`,
+    );
+    return r.data;
+  },
+
+  createApiKey: async (projectId, name) => {
+    const r = await api.post<ApiKeyCreateResponse>(
+      `/api/v1/projects/${projectId}/api-keys`,
+      { name },
+    );
+    return r.data;
+  },
+
+  deleteApiKey: async (projectId, keyId) => {
+    await api.delete(`/api/v1/projects/${projectId}/api-keys/${keyId}`);
   },
 }));

@@ -258,4 +258,66 @@ describe("predict-store", () => {
       expect(deleted).toBe(true);
     });
   });
+
+  describe("S5 api publish state", () => {
+    it("publishApi POSTs and returns project with api_code", async () => {
+      mock.onPost("/api/v1/projects/p-1/publish").reply(200, {
+        id: "p-1", workspace_id: "ws-1", name: "P", slug: "p", description: null,
+        template_key: "custom", created_by: "u-1",
+        created_at: "", updated_at: "", deleted_at: null,
+        api_code: "receipts",
+        api_published_at: "2026-04-29T12:00:00",
+        api_disabled_at: null,
+      });
+      const out = await usePredictStore.getState().publishApi("p-1", "receipts");
+      expect(out.api_code).toBe("receipts");
+      expect(out.api_disabled_at).toBeNull();
+    });
+
+    it("unpublishApi POSTs and returns project with api_disabled_at", async () => {
+      mock.onPost("/api/v1/projects/p-1/unpublish").reply(200, {
+        id: "p-1", workspace_id: "ws-1", name: "P", slug: "p", description: null,
+        template_key: "custom", created_by: "u-1",
+        created_at: "", updated_at: "", deleted_at: null,
+        api_code: "receipts",
+        api_published_at: "2026-04-29T12:00:00",
+        api_disabled_at: "2026-04-29T13:00:00",
+      });
+      const out = await usePredictStore.getState().unpublishApi("p-1");
+      expect(out.api_disabled_at).not.toBeNull();
+    });
+
+    it("listApiKeys GETs and returns array", async () => {
+      mock.onGet("/api/v1/projects/p-1/api-keys").reply(200, [{
+        id: "k-1", project_id: "p-1", name: "production",
+        key_prefix: "dik_AbCdEfGh", is_active: true,
+        last_used_at: null, created_by: "u-1", created_at: "",
+      }]);
+      const out = await usePredictStore.getState().listApiKeys("p-1");
+      expect(out.length).toBe(1);
+      expect(out[0].key_prefix).toBe("dik_AbCdEfGh");
+    });
+
+    it("createApiKey POSTs and returns response with full key once", async () => {
+      mock.onPost("/api/v1/projects/p-1/api-keys").reply(201, {
+        id: "k-1", project_id: "p-1", name: "production",
+        key_prefix: "dik_AbCdEfGh", is_active: true,
+        last_used_at: null, created_by: "u-1", created_at: "",
+        key: "dik_AbCdEfGh_LongFullKeyHereXYZ123",
+      });
+      const out = await usePredictStore.getState().createApiKey("p-1", "production");
+      expect(out.key).toMatch(/^dik_/);
+      expect(out.key.startsWith(out.key_prefix)).toBe(true);
+    });
+
+    it("deleteApiKey DELETEs", async () => {
+      let deleted = false;
+      mock.onDelete("/api/v1/projects/p-1/api-keys/k-1").reply(() => {
+        deleted = true;
+        return [204, ""];
+      });
+      await usePredictStore.getState().deleteApiKey("p-1", "k-1");
+      expect(deleted).toBe(true);
+    });
+  });
 });
