@@ -154,7 +154,7 @@ export default function ProjectDocumentsPage() {
   const totalPages = Math.max(1, Math.ceil(docs.total / 20));
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">{project?.name ?? "..."}</h1>
         <div className="text-sm text-[#94a3b8]">
