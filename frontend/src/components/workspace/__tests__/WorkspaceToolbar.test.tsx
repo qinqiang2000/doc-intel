@@ -57,8 +57,8 @@ describe("WorkspaceToolbar", () => {
 
   it("Prev button disabled at first doc; Next disabled at last", () => {
     const { rerender } = renderToolbar({ currentDocId: "d-1" });
-    expect(screen.getByRole("button", { name: /上一份/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /下一份/ })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /Previous/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Next →$/i })).not.toBeDisabled();
     rerender(
       <MemoryRouter>
         <WorkspaceToolbar
@@ -68,16 +68,16 @@ describe("WorkspaceToolbar", () => {
         />
       </MemoryRouter>
     );
-    expect(screen.getByRole("button", { name: /上一份/ })).not.toBeDisabled();
-    expect(screen.getByRole("button", { name: /下一份/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Previous/i })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Next →$/i })).toBeDisabled();
   });
 
   it("Prev/Next call onSwitch with neighbor id", async () => {
     const user = userEvent.setup();
     renderToolbar();
-    await user.click(screen.getByRole("button", { name: /下一份/ }));
+    await user.click(screen.getByRole("button", { name: /^Next →$/i }));
     expect(onSwitchMock).toHaveBeenCalledWith("d-3");
-    await user.click(screen.getByRole("button", { name: /上一份/ }));
+    await user.click(screen.getByRole("button", { name: /Previous/i }));
     expect(onSwitchMock).toHaveBeenCalledWith("d-1");
   });
 

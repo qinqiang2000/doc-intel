@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
+import i18n from "./i18n";
+
+// Pin the test locale so assertions on user-facing text are deterministic.
+// Existing tests assert against English strings, so default to en here.
+void i18n.changeLanguage("en");
 
 afterEach(() => {
   cleanup();

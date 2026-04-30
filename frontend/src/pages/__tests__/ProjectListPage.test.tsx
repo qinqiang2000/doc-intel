@@ -65,8 +65,8 @@ describe("ProjectListPage", () => {
 
   it("shows empty-state with '+ 新建 Project' button when list empty", () => {
     renderPage();
-    expect(screen.getByText(/还没有 Project/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /新建 Project/ })).toBeInTheDocument();
+    expect(screen.getByText(/No projects yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /New project/i })).toBeInTheDocument();
   });
 
   it("renders project cards when loaded", () => {
@@ -90,7 +90,7 @@ describe("ProjectListPage", () => {
   it("clicking '+ 新建' navigates to /workspaces/demo/projects/new", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByRole("button", { name: /新建 Project/ }));
+    await user.click(screen.getByRole("button", { name: /New project/i }));
     expect(navigateMock).toHaveBeenCalledWith("/workspaces/demo/projects/new");
   });
 });

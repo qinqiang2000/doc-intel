@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
+import ToastContainer from "./components/ToastContainer";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import EvaluatePage from "./pages/EvaluatePage";
@@ -37,6 +38,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginPage />} />

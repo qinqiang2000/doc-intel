@@ -7,6 +7,8 @@ import { usePredictStore } from "../../../stores/predict-store";
 const onPatchMock = vi.fn();
 const onDeleteMock = vi.fn();
 const onAddMock = vi.fn();
+const onRemoveLocalMock = vi.fn();
+const onRestoreLocalMock = vi.fn();
 
 const annotations = [
   {
@@ -26,14 +28,20 @@ const annotations = [
 ];
 
 beforeEach(() => {
+  vi.useRealTimers();
   onPatchMock.mockReset().mockImplementation(async (_id, p) => ({ ...annotations[0], ...p }));
-  onDeleteMock.mockReset();
+  onDeleteMock.mockReset().mockResolvedValue(undefined);
   onAddMock.mockReset().mockResolvedValue({
     ...annotations[0], id: "a-new", field_name: "new_field", field_value: "v",
   });
+  onRemoveLocalMock.mockReset();
+  onRestoreLocalMock.mockReset();
 });
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.clearAllMocks();
+});
 
 describe("AnnotationEditor", () => {
   it("renders all annotations with name, value, source chip", () => {
@@ -43,6 +51,8 @@ describe("AnnotationEditor", () => {
         onPatch={onPatchMock}
         onDelete={onDeleteMock}
         onAdd={onAddMock}
+        onRemoveLocal={onRemoveLocalMock}
+        onRestoreLocal={onRestoreLocalMock}
       />
     );
     expect(screen.getByDisplayValue("INV-001")).toBeInTheDocument();
@@ -59,6 +69,8 @@ describe("AnnotationEditor", () => {
         onPatch={onPatchMock}
         onDelete={onDeleteMock}
         onAdd={onAddMock}
+        onRemoveLocal={onRemoveLocalMock}
+        onRestoreLocal={onRestoreLocalMock}
       />
     );
     const input = screen.getByDisplayValue("INV-001");
@@ -68,7 +80,7 @@ describe("AnnotationEditor", () => {
     await waitFor(() => expect(onPatchMock).toHaveBeenCalledWith("a-1", { field_value: "INV-002" }));
   });
 
-  it("clicking delete calls onDelete", async () => {
+  it("clicking delete optimistically removes the row and defers onDelete to the undo window", async () => {
     const user = userEvent.setup();
     render(
       <AnnotationEditor
@@ -76,14 +88,24 @@ describe("AnnotationEditor", () => {
         onPatch={onPatchMock}
         onDelete={onDeleteMock}
         onAdd={onAddMock}
+        onRemoveLocal={onRemoveLocalMock}
+        onRestoreLocal={onRestoreLocalMock}
       />
     );
-    const buttons = screen.getAllByRole("button", { name: /删除/ });
+    const buttons = screen.getAllByRole("button", { name: /Delete/i });
     await user.click(buttons[0]);
-    expect(onDeleteMock).toHaveBeenCalledWith("a-1");
-  });
+    expect(onRemoveLocalMock).toHaveBeenCalledWith("a-1");
+    expect(onDeleteMock).not.toHaveBeenCalled();
 
-  it("'+ 添加字段' opens form and POSTs", async () => {
+    // Real-timer wait: undo window is 5s, so we wait a bit longer for the
+    // commit. waitFor polls so this resolves as soon as commit fires.
+    await waitFor(
+      () => expect(onDeleteMock).toHaveBeenCalledWith("a-1"),
+      { timeout: 7000 },
+    );
+  }, 10000);
+
+  it("'+ Add field' opens form and POSTs", async () => {
     const user = userEvent.setup();
     render(
       <AnnotationEditor
@@ -91,12 +113,14 @@ describe("AnnotationEditor", () => {
         onPatch={onPatchMock}
         onDelete={onDeleteMock}
         onAdd={onAddMock}
+        onRemoveLocal={onRemoveLocalMock}
+        onRestoreLocal={onRestoreLocalMock}
       />
     );
-    await user.click(screen.getByRole("button", { name: /添加字段/ }));
-    await user.type(screen.getByLabelText(/字段名/), "new_field");
-    await user.type(screen.getByLabelText(/^值/), "v");
-    await user.click(screen.getByRole("button", { name: /保存/ }));
+    await user.click(screen.getByRole("button", { name: /Add field/i }));
+    await user.type(screen.getByLabelText(/Field name/i), "new_field");
+    await user.type(screen.getByLabelText(/^Value/i), "v");
+    await user.click(screen.getByRole("button", { name: /^Save$/ }));
     await waitFor(() =>
       expect(onAddMock).toHaveBeenCalledWith({
         field_name: "new_field",
@@ -113,9 +137,11 @@ describe("AnnotationEditor", () => {
         onPatch={onPatchMock}
         onDelete={onDeleteMock}
         onAdd={onAddMock}
+        onRemoveLocal={onRemoveLocalMock}
+        onRestoreLocal={onRestoreLocalMock}
       />
     );
-    expect(screen.getByRole("button", { name: /添加字段/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Add field/i })).toBeInTheDocument();
     expect(screen.queryByDisplayValue("INV-001")).not.toBeInTheDocument();
   });
 
@@ -140,12 +166,13 @@ describe("AnnotationEditor", () => {
           },
         ]}
         onPatch={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()}
+        onRemoveLocal={vi.fn()} onRestoreLocal={vi.fn()}
       />
     );
     const row1 = screen.getByText("field-1").closest("[data-row-id]") as HTMLElement;
     const row2 = screen.getByText("field-2").closest("[data-row-id]") as HTMLElement;
-    expect(row1.className).not.toMatch(/border-\[#6366f1\]/);
-    expect(row2.className).toMatch(/border-\[#6366f1\]/);
+    expect(row1.className).not.toMatch(/border-accent/);
+    expect(row2.className).toMatch(/border-accent/);
   });
 
   it("clicking a row body sets selectedAnnotationId in store", async () => {
@@ -161,6 +188,7 @@ describe("AnnotationEditor", () => {
           created_at: "", updated_at: "",
         }]}
         onPatch={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()}
+        onRemoveLocal={vi.fn()} onRestoreLocal={vi.fn()}
       />
     );
     await user.click(screen.getByText("field-1"));
@@ -180,6 +208,7 @@ describe("AnnotationEditor", () => {
           created_at: "", updated_at: "",
         }]}
         onPatch={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()}
+        onRemoveLocal={vi.fn()} onRestoreLocal={vi.fn()}
       />
     );
     const input = screen.getByDisplayValue("v1");
@@ -201,6 +230,7 @@ describe("AnnotationEditor", () => {
           created_at: "", updated_at: "",
         }]}
         onPatch={vi.fn()} onDelete={vi.fn()} onAdd={vi.fn()}
+        onRemoveLocal={vi.fn()} onRestoreLocal={vi.fn()}
       />
     );
     expect(scrollFn).toHaveBeenCalledWith(

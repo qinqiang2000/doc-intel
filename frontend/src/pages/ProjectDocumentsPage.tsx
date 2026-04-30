@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import DocumentUploader from "../components/upload/DocumentUploader";
 import BatchPredictDrawer from "../components/predict/BatchPredictDrawer";
 import { api, extractApiError } from "../lib/api-client";
@@ -37,6 +38,7 @@ interface DocList {
 export default function ProjectDocumentsPage() {
   const { slug, pid } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const workspaces = useAuthStore((s) => s.workspaces);
   const ws = workspaces.find((w) => w.slug === slug);
 
@@ -81,7 +83,7 @@ export default function ProjectDocumentsPage() {
         navigate(`/workspaces/${wsSlug}/projects/${pid}/workspace?doc=${doc.id}`);
       }
     } else {
-      alert("已全部 predict 过");
+      alert(t("documents.allPredicted"));
     }
   }
 
@@ -132,10 +134,12 @@ export default function ProjectDocumentsPage() {
 
   useEffect(() => {
     void loadProject();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadProject is a local closure; effect intentionally re-runs only on pid/ws change
   }, [pid, ws?.id]);
 
   useEffect(() => {
     void loadDocs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadDocs is a local closure; effect intentionally re-runs only on pid/queryString change
   }, [pid, queryString]);
 
   async function toggleGT(doc: Document) {
@@ -146,7 +150,7 @@ export default function ProjectDocumentsPage() {
   }
 
   async function onDelete(doc: Document) {
-    if (!confirm(`删除 "${doc.filename}"？此操作软删可恢复。`)) return;
+    if (!confirm(t("documents.deleteConfirm", { name: doc.filename }))) return;
     await api.delete(`/api/v1/projects/${pid}/documents/${doc.id}`);
     await loadDocs();
   }
@@ -157,11 +161,11 @@ export default function ProjectDocumentsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">{project?.name ?? "..."}</h1>
-        <div className="text-sm text-[#94a3b8]">
+        <div className="text-sm text-muted">
           {project?.template?.display_name && (
             <span>{project.template.display_name} · </span>
           )}
-          {docs.total} 个文档
+          {t("documents.countLabel", { count: docs.total })}
         </div>
       </div>
 
@@ -174,95 +178,95 @@ export default function ProjectDocumentsPage() {
         <button
           type="button" onClick={() => void onBatchPredict()}
           disabled={selected.size === 0}
-          className="bg-[#6366f1] hover:bg-[#818cf8] text-white text-sm px-3 py-1.5 rounded disabled:opacity-50"
+          className="bg-accent hover:bg-accent-hover text-white text-sm px-3 py-1.5 rounded disabled:opacity-50"
         >
-          + Batch Predict ({selected.size} selected)
+          {t("documents.batchPredictBtn", { count: selected.size })}
         </button>
         <button
           type="button" onClick={() => void onNextUnreviewed()}
-          className="text-sm text-[#94a3b8] border border-[#2a2e3d] px-3 py-1.5 rounded hover:bg-[#1a1d27]"
+          className="text-sm text-muted border border-default px-3 py-1.5 rounded hover:bg-surface"
         >
-          ▶ Next Unreviewed
+          {t("documents.nextUnreviewed")}
         </button>
         <button
           type="button"
           onClick={() => ws && navigate(`/workspaces/${ws.slug}/projects/${pid}/evaluate`)}
-          className="text-xs text-[#6366f1] hover:underline"
-          title="Evaluate this project"
+          className="text-xs text-accent hover:underline"
+          title={t("documents.evaluateBtn")}
         >
-          📊 Evaluate
+          {t("documents.evaluateBtn")}
         </button>
         <button
           type="button"
           onClick={() => ws && navigate(`/workspaces/${ws.slug}/projects/${pid}/api`)}
-          className="text-xs text-[#6366f1] hover:underline"
-          title="API publish"
+          className="text-xs text-accent hover:underline"
+          title={t("documents.apiBtn")}
         >
-          🔌 API
+          {t("documents.apiBtn")}
         </button>
       </div>
 
       <div className="mt-6 mb-4 flex flex-wrap gap-3 items-center">
         <input
           type="search"
-          placeholder="搜索文件名..."
+          placeholder={t("documents.searchFilename")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-1.5 text-sm focus:border-[#6366f1] outline-none"
+          className="bg-surface-input border border-default rounded px-3 py-1.5 text-sm focus:border-accent outline-none"
         />
-        <label className="text-xs text-[#94a3b8] flex items-center gap-1">
-          Ground Truth
+        <label className="text-xs text-muted flex items-center gap-1">
+          {t("documents.groundTruth")}
           <select
             value={gt}
             onChange={(e) => {
               setGt(e.target.value as "all" | "true" | "false");
               setPage(1);
             }}
-            className="bg-[#0f1117] border border-[#2a2e3d] rounded px-2 py-1 text-sm"
+            className="bg-surface-input border border-default rounded px-2 py-1 text-sm"
           >
-            <option value="all">全部</option>
-            <option value="true">仅 GT</option>
-            <option value="false">非 GT</option>
+            <option value="all">{t("common.all")}</option>
+            <option value="true">{t("documents.gtOnly")}</option>
+            <option value="false">{t("documents.gtNone")}</option>
           </select>
         </label>
-        <label className="text-xs text-[#94a3b8] flex items-center gap-1">
-          排序
+        <label className="text-xs text-muted flex items-center gap-1">
+          {t("documents.sortBy")}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-[#0f1117] border border-[#2a2e3d] rounded px-2 py-1 text-sm"
+            className="bg-surface-input border border-default rounded px-2 py-1 text-sm"
           >
-            <option value="created_at">创建时间</option>
-            <option value="filename">文件名</option>
-            <option value="file_size">大小</option>
+            <option value="created_at">{t("documents.createdAt")}</option>
+            <option value="filename">{t("documents.filename")}</option>
+            <option value="file_size">{t("documents.size")}</option>
           </select>
         </label>
         <button
           type="button"
           onClick={() => setOrder(order === "desc" ? "asc" : "desc")}
-          className="text-xs text-[#94a3b8] hover:text-[#e2e8f0]"
+          className="text-xs text-muted hover:text-primary"
         >
           {order === "desc" ? "↓" : "↑"}
         </button>
       </div>
 
-      {error && <div className="text-[#ef4444] text-xs mb-3">{error}</div>}
+      {error && <div className="text-danger text-xs mb-3">{error}</div>}
 
       {loading && docs.items.length === 0 ? (
-        <div className="text-[#64748b] text-sm">加载中...</div>
+        <div className="text-subtle text-sm">{t("common.loading")}</div>
       ) : docs.items.length === 0 ? (
-        <div className="text-[#64748b] text-sm">还没有文档</div>
+        <div className="text-subtle text-sm">{t("documents.noDocuments")}</div>
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-xs uppercase text-[#94a3b8] border-b border-[#2a2e3d]">
+            <tr className="text-xs uppercase text-muted border-b border-default">
               <th className="text-left py-2 w-8"></th>
-              <th className="text-left py-2">文件名</th>
-              <th className="text-left">大小</th>
-              <th className="text-left">类型</th>
-              <th className="text-left">状态</th>
-              <th className="text-left">GT</th>
-              <th className="text-right">操作</th>
+              <th className="text-left py-2">{t("documents.filename")}</th>
+              <th className="text-left">{t("documents.size")}</th>
+              <th className="text-left">{t("documents.type")}</th>
+              <th className="text-left">{t("documents.status")}</th>
+              <th className="text-left">{t("documents.gtShort")}</th>
+              <th className="text-right">{t("documents.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -280,7 +284,7 @@ export default function ProjectDocumentsPage() {
                 <tr
                   key={d.id}
                   onClick={openWorkspace}
-                  className="border-b border-[#1a1d27] cursor-pointer hover:bg-[#1a1d27] transition-colors"
+                  className="border-b border-surface cursor-pointer hover:bg-surface transition-colors"
                 >
                   <td onClick={stop}>
                     <input
@@ -294,36 +298,36 @@ export default function ProjectDocumentsPage() {
                   </td>
                   <td className="py-2">{d.filename}</td>
                   <td>{(d.file_size / 1024).toFixed(1)} KB</td>
-                  <td className="text-[#94a3b8]">{d.mime_type}</td>
+                  <td className="text-muted">{d.mime_type}</td>
                   <td>{d.status}</td>
                   <td>
                     {d.is_ground_truth ? (
-                      <span className="text-[#22c55e] text-xs">● GT</span>
+                      <span className="text-success text-xs">● {t("documents.gtShort")}</span>
                     ) : (
-                      <span className="text-[#64748b] text-xs">—</span>
+                      <span className="text-subtle text-xs">—</span>
                     )}
                   </td>
                   <td className="text-right" onClick={stop}>
                     <button
                       type="button"
                       onClick={openWorkspace}
-                      className="text-xs text-[#6366f1] hover:underline mr-3"
+                      className="text-xs text-accent hover:underline mr-3"
                     >
-                      工作台
+                      {t("documents.openWorkspace")}
                     </button>
                     <button
                       type="button"
                       onClick={() => void toggleGT(d)}
-                      className="text-xs text-[#94a3b8] hover:text-[#e2e8f0] mr-3"
+                      className="text-xs text-muted hover:text-primary mr-3"
                     >
-                      {d.is_ground_truth ? "取消 GT" : "标记为 GT"}
+                      {d.is_ground_truth ? t("documents.unmarkGT") : t("documents.markGT")}
                     </button>
                     <button
                       type="button"
                       onClick={() => void onDelete(d)}
-                      className="text-xs text-[#ef4444] hover:underline"
+                      className="text-xs text-danger hover:underline"
                     >
-                      删除
+                      {t("common.delete")}
                     </button>
                   </td>
                 </tr>
@@ -339,20 +343,20 @@ export default function ProjectDocumentsPage() {
             type="button"
             disabled={page === 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="text-[#94a3b8] disabled:opacity-30"
+            className="text-muted disabled:opacity-30"
           >
-            上一页
+            {t("common.previous")}
           </button>
-          <span className="text-[#64748b]">
+          <span className="text-subtle">
             {page} / {totalPages}
           </span>
           <button
             type="button"
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="text-[#94a3b8] disabled:opacity-30"
+            className="text-muted disabled:opacity-30"
           >
-            下一页
+            {t("common.next")}
           </button>
         </div>
       )}

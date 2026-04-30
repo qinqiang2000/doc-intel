@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   usePredictStore,
   type EvaluationRun,
@@ -9,6 +10,7 @@ import {
 export default function EvaluatePage() {
   const { slug, pid } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const listEvaluations = usePredictStore((s) => s.listEvaluations);
   const runEvaluation = usePredictStore((s) => s.runEvaluation);
   const getEvaluationDetail = usePredictStore((s) => s.getEvaluationDetail);
@@ -37,7 +39,7 @@ export default function EvaluatePage() {
         }
       } catch (e) {
         if (!cancelled) {
-          setError((e as { message?: string }).message ?? "Failed to load");
+          setError((e as { message?: string }).message ?? t("evaluate.loadFailed"));
           setLoading(false);
         }
       }
@@ -45,7 +47,7 @@ export default function EvaluatePage() {
     return () => {
       cancelled = true;
     };
-  }, [pid, listEvaluations]);
+  }, [pid, listEvaluations, t]);
 
   useEffect(() => {
     if (!selectedRunId) {
@@ -75,7 +77,7 @@ export default function EvaluatePage() {
       setRuns(refreshed);
       setSelectedRunId(newRun.id);
     } catch (e) {
-      setError((e as { message?: string }).message ?? "Run failed");
+      setError((e as { message?: string }).message ?? t("evaluate.runFailed"));
     } finally {
       setRunning(false);
     }
@@ -83,7 +85,7 @@ export default function EvaluatePage() {
 
   async function handleDelete(rid: string) {
     if (!pid) return;
-    if (!confirm("Delete this evaluation run?")) return;
+    if (!confirm(t("evaluate.deleteRunConfirm"))) return;
     await deleteEvaluation(rid);
     if (selectedRunId === rid) setSelectedRunId(null);
     const refreshed = await listEvaluations(pid);
@@ -99,11 +101,11 @@ export default function EvaluatePage() {
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => slug && pid && navigate(`/workspaces/${slug}/projects/${pid}`)}
-          className="text-xs text-[#94a3b8] hover:text-[#e2e8f0]"
+          className="text-xs text-muted hover:text-primary"
         >
-          ◀ Back to Project
+          {t("evaluate.back")}
         </button>
-        <h1 className="text-lg font-semibold">📊 Evaluate</h1>
+        <h1 className="text-lg font-semibold">{t("evaluate.title")}</h1>
         <div />
       </div>
 
@@ -112,66 +114,64 @@ export default function EvaluatePage() {
           type="button"
           disabled={running}
           onClick={() => void handleRun()}
-          className="bg-[#6366f1] text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+          className="bg-accent text-white px-3 py-1 rounded text-sm disabled:opacity-50"
         >
-          {running ? "Running..." : "Run Evaluation"}
+          {running ? t("evaluate.running") : t("evaluate.runEvaluation")}
         </button>
-        <span className="text-xs text-[#64748b]">
-          Edit annotations first for meaningful accuracy.
-        </span>
+        <span className="text-xs text-subtle">{t("evaluate.annotateFirst")}</span>
       </div>
 
       {error && (
-        <div className="text-xs text-[#ef4444] bg-[#3f1d1d] border border-[#ef4444] rounded p-2 mb-4">
+        <div className="text-xs text-danger bg-danger-soft border border-danger rounded p-2 mb-4">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="text-xs text-[#94a3b8]">Loading...</div>
+        <div className="text-xs text-muted">{t("evaluate.loading")}</div>
       ) : runs.length === 0 ? (
-        <div className="text-xs text-[#64748b] text-center py-8">
-          Run your first evaluation to see accuracy metrics.
+        <div className="text-xs text-subtle text-center py-8">
+          {t("evaluate.noRunsHint")}
         </div>
       ) : (
         <div className="space-y-2">
           {runs.map((r) => (
             <div
               key={r.id}
-              className={`bg-[#0f1117] border rounded p-2 cursor-pointer ${
-                selectedRunId === r.id ? "border-[#6366f1]" : "border-[#2a2e3d]"
+              className={`bg-surface-input border rounded p-2 cursor-pointer ${
+                selectedRunId === r.id ? "border-accent" : "border-default"
               }`}
               onClick={() => setSelectedRunId(r.id)}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-mono text-[#818cf8]">
+                  <span className="font-mono text-accent-hover">
                     {(r.accuracy_avg * 100).toFixed(1)}%
                   </span>
-                  <span className="text-xs text-[#94a3b8] ml-2">
+                  <span className="text-xs text-muted ml-2">
                     · {r.num_docs} docs · {r.num_fields_evaluated} fields
                   </span>
                   {r.status === "failed" && (
-                    <span className="ml-2 text-[#ef4444]">FAILED</span>
+                    <span className="ml-2 text-danger">{t("evaluate.failed")}</span>
                   )}
                   {r.name && (
-                    <span className="ml-2 italic text-[#94a3b8]">{r.name}</span>
+                    <span className="ml-2 italic text-muted">{r.name}</span>
                   )}
                 </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); void handleDownload(r.id); }}
-                    className="text-xs text-[#6366f1] hover:underline"
-                    title="Download Excel"
+                    className="text-xs text-accent hover:underline"
+                    title={t("evaluate.downloadExcel")}
                   >
                     📥
                   </button>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); void handleDelete(r.id); }}
-                    className="text-xs text-[#ef4444] hover:underline"
-                    title="Delete run"
+                    className="text-xs text-danger hover:underline"
+                    title={t("evaluate.deleteRun")}
                   >
                     🗑
                   </button>
@@ -190,9 +190,9 @@ export default function EvaluatePage() {
 function EvaluationDetail({
   detail,
 }: { detail: { run: EvaluationRun; fields: EvaluationFieldResult[] } }) {
+  const { t } = useTranslation();
   const [showRows, setShowRows] = useState(false);
 
-  // Aggregate per-field
   type Bucket = { exact: number; fuzzy: number; mismatch: number; missing_pred: number; missing_expected: number };
   const buckets = new Map<string, Bucket>();
   for (const f of detail.fields) {
@@ -208,13 +208,13 @@ function EvaluationDetail({
 
   return (
     <div className="mt-6">
-      <h2 className="text-sm font-semibold mb-2">Per-field summary</h2>
+      <h2 className="text-sm font-semibold mb-2">{t("evaluate.perFieldSummary")}</h2>
       <table className="text-xs w-full">
         <thead>
-          <tr className="text-left text-[#94a3b8]">
-            <th className="pr-2">Field</th>
+          <tr className="text-left text-muted">
+            <th className="pr-2">{t("evaluate.thField")}</th>
             <th>exact</th><th>fuzzy</th><th>mismatch</th>
-            <th>missing</th><th>accuracy</th>
+            <th>missing</th><th>{t("evaluate.thAccuracy")}</th>
           </tr>
         </thead>
         <tbody>
@@ -233,16 +233,21 @@ function EvaluationDetail({
 
       <button
         type="button"
-        className="text-xs text-[#6366f1] hover:underline mt-3"
+        className="text-xs text-accent hover:underline mt-3"
         onClick={() => setShowRows((v) => !v)}
       >
-        {showRows ? "Hide" : "Show"} per-doc rows ({detail.fields.length})
+        {showRows ? t("evaluate.hideRows") : t("evaluate.showRows")}{" "}
+        {t("evaluate.rowsCount", { count: detail.fields.length })}
       </button>
       {showRows && (
         <table className="text-xs w-full mt-2">
           <thead>
-            <tr className="text-left text-[#94a3b8]">
-              <th>filename</th><th>field</th><th>predicted</th><th>expected</th><th>status</th>
+            <tr className="text-left text-muted">
+              <th>{t("evaluate.thFilename")}</th>
+              <th>{t("evaluate.thField")}</th>
+              <th>{t("evaluate.thPredicted")}</th>
+              <th>{t("evaluate.thExpected")}</th>
+              <th>{t("evaluate.thStatus")}</th>
             </tr>
           </thead>
           <tbody>
@@ -250,8 +255,8 @@ function EvaluationDetail({
               <tr key={f.id}>
                 <td>{f.document_filename}</td>
                 <td className="font-mono">{f.field_name}</td>
-                <td className="text-[#fca5a5]">{f.predicted_value ?? ""}</td>
-                <td className="text-[#86efac]">{f.expected_value ?? ""}</td>
+                <td className="text-diff-removed-fg">{f.predicted_value ?? ""}</td>
+                <td className="text-diff-added-fg">{f.expected_value ?? ""}</td>
                 <td>{f.match_status}</td>
               </tr>
             ))}

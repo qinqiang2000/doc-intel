@@ -83,7 +83,7 @@ describe("ProjectDocumentsPage", () => {
   it("shows empty state when no documents", async () => {
     mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, docList([]));
     renderPage();
-    expect(await screen.findByText(/还没有文档/)).toBeInTheDocument();
+    expect(await screen.findByText(/No documents yet/i)).toBeInTheDocument();
   });
 
   it("filename search re-fetches with q param", async () => {
@@ -94,7 +94,7 @@ describe("ProjectDocumentsPage", () => {
     renderPage();
     await screen.findByText("d-1.pdf");
 
-    const search = screen.getByPlaceholderText(/搜索文件名/);
+    const search = screen.getByPlaceholderText(/Search filename/i);
     await user.type(search, "alpha");
 
     await waitFor(() => {
@@ -107,7 +107,7 @@ describe("ProjectDocumentsPage", () => {
     mock.onGet(/\/api\/v1\/projects\/p-1\/documents.*/).reply(200, docList([]));
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText(/还没有文档/);
+    await screen.findByText(/No documents yet/i);
 
     const gtSelect = screen.getByLabelText(/Ground Truth/);
     await user.selectOptions(gtSelect, "true");
@@ -130,7 +130,7 @@ describe("ProjectDocumentsPage", () => {
     renderPage();
     await screen.findByText("x.pdf");
 
-    const toggleBtn = screen.getByRole("button", { name: /标记为 GT/ });
+    const toggleBtn = screen.getByRole("button", { name: /Mark as GT/i });
     await user.click(toggleBtn);
 
     await waitFor(() => {
@@ -148,7 +148,7 @@ describe("ProjectDocumentsPage", () => {
     renderPage();
     await screen.findByText("d-1.pdf");
 
-    await user.click(screen.getByRole("button", { name: /删除/ }));
+    await user.click(screen.getByRole("button", { name: /^Delete$/i }));
 
     await waitFor(() => expect(mock.history.delete.length).toBe(1));
     confirmSpy.mockRestore();
@@ -167,7 +167,7 @@ describe("ProjectDocumentsPage", () => {
     renderPage();
     await screen.findByText(/d-1-0/);
 
-    const nextBtn = screen.getByRole("button", { name: /下一页/ });
+    const nextBtn = screen.getByRole("button", { name: /^Next$/i });
     await user.click(nextBtn);
 
     await waitFor(() => {
@@ -201,7 +201,7 @@ describe("ProjectDocumentsPage", () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("x.pdf");
-    await user.click(screen.getByRole("button", { name: /^工作台$/ }));
+    await user.click(screen.getByRole("button", { name: /^Workspace$/i }));
     expect(navigateMock).toHaveBeenCalledWith(
       "/workspaces/demo/projects/p-1/workspace?doc=d-1"
     );

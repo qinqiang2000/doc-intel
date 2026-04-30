@@ -30,7 +30,7 @@ describe("JsonPreview", () => {
 
   it("shows placeholder when data is null", () => {
     render(<JsonPreview structuredData={null} version={null} annotations={[]} />);
-    expect(screen.getByText(/尚无 predict 结果/)).toBeInTheDocument();
+    expect(screen.getByText(/No prediction yet/i)).toBeInTheDocument();
   });
 
   it("toggle to Detailed shows {value, confidence, bbox} per field", async () => {

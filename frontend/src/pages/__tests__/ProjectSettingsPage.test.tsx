@@ -72,10 +72,10 @@ describe("ProjectSettingsPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    const nameInput = await screen.findByLabelText(/名称/);
+    const nameInput = await screen.findByLabelText(/Name/i);
     await user.clear(nameInput);
     await user.type(nameInput, "NewName");
-    await user.click(screen.getByRole("button", { name: /保存/ }));
+    await user.click(screen.getByRole("button", { name: /^Save$/i }));
 
     await waitFor(() => expect(mock.history.patch.length).toBe(1));
   });
@@ -88,7 +88,7 @@ describe("ProjectSettingsPage", () => {
     renderPage();
 
     await screen.findByText(/日本領収書/);
-    await user.click(screen.getByRole("button", { name: /删除 Project/ }));
+    await user.click(screen.getByRole("button", { name: /Delete project/i }));
 
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith("/workspaces/demo");

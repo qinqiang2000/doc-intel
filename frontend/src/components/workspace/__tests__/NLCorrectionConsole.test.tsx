@@ -24,7 +24,7 @@ describe("NLCorrectionConsole", () => {
         currentResult={null}
       />
     );
-    expect(screen.queryByPlaceholderText(/自然语言/)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/natural language/i)).not.toBeInTheDocument();
   });
 
   it("Send button disabled while stream is active", () => {

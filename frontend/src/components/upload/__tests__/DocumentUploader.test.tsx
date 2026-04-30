@@ -26,7 +26,7 @@ function makeFile(name: string, size: number, type = "application/pdf") {
 describe("DocumentUploader", () => {
   it("renders the dropzone", () => {
     render(<DocumentUploader projectId="p-1" onUploaded={onUploadedMock} />);
-    expect(screen.getByText(/拖拽/)).toBeInTheDocument();
+    expect(screen.getByText(/Drag files/i)).toBeInTheDocument();
   });
 
   it("uploads a single file via POST and calls onUploaded", async () => {
@@ -57,7 +57,7 @@ describe("DocumentUploader", () => {
     await userEvent.upload(fileInput, big);
 
     await waitFor(() => {
-      expect(screen.getByText(/超过.*50/)).toBeInTheDocument();
+      expect(screen.getByText(/Exceeds.*50/i)).toBeInTheDocument();
     });
     expect(mock.history.post.length).toBe(0);
   });
@@ -71,7 +71,7 @@ describe("DocumentUploader", () => {
     await userEvent.upload(fileInput, bad);
 
     await waitFor(() => {
-      expect(screen.getByText(/不支持/)).toBeInTheDocument();
+      expect(screen.getByText(/Unsupported/i)).toBeInTheDocument();
     });
     expect(mock.history.post.length).toBe(0);
   });

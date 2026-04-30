@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { api, extractApiError } from "../../lib/api-client";
 
 const MAX_BYTES = 50 * 1024 * 1024;
@@ -24,6 +25,7 @@ interface Row {
 }
 
 export default function DocumentUploader({ projectId, onUploaded }: Props) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<Row[]>([]);
 
@@ -41,7 +43,7 @@ export default function DocumentUploader({ projectId, onUploaded }: Props) {
         setRows((prev) =>
           prev.map((r, idx) =>
             idx === rowIndex
-              ? { ...r, status: "error", message: `超过 50MB 上限（${file.size} bytes）` }
+              ? { ...r, status: "error", message: t("documents.fileTooLarge", { bytes: file.size }) }
               : r
           )
         );
@@ -51,7 +53,7 @@ export default function DocumentUploader({ projectId, onUploaded }: Props) {
         setRows((prev) =>
           prev.map((r, idx) =>
             idx === rowIndex
-              ? { ...r, status: "error", message: `不支持的文件类型: ${file.type || "未知"}` }
+              ? { ...r, status: "error", message: t("documents.unsupportedType", { type: file.type || t("common.unknown") }) }
               : r
           )
         );
@@ -100,19 +102,15 @@ export default function DocumentUploader({ projectId, onUploaded }: Props) {
   }
 
   return (
-    <div className="bg-[#1a1d27] border border-dashed border-[#2a2e3d] rounded p-6">
+    <div className="bg-surface border border-dashed border-default rounded p-6">
       <div
         onDrop={onDrop}
         onDragOver={(e) => e.preventDefault()}
         className="text-center cursor-pointer"
         onClick={() => fileInputRef.current?.click()}
       >
-        <div className="text-sm text-[#94a3b8]">
-          拖拽文件到此处，或点击选择
-        </div>
-        <div className="text-xs text-[#64748b] mt-1">
-          支持 PDF / PNG / JPG / XLSX / CSV（≤ 50MB）
-        </div>
+        <div className="text-sm text-muted">{t("documents.dropZone")}</div>
+        <div className="text-xs text-subtle mt-1">{t("documents.dropHint")}</div>
         <input
           ref={fileInputRef}
           type="file"
@@ -129,10 +127,10 @@ export default function DocumentUploader({ projectId, onUploaded }: Props) {
               key={idx}
               className={
                 r.status === "done"
-                  ? "text-[#22c55e]"
+                  ? "text-success"
                   : r.status === "error"
-                  ? "text-[#ef4444]"
-                  : "text-[#94a3b8]"
+                  ? "text-danger"
+                  : "text-muted"
               }
             >
               {r.status === "done"

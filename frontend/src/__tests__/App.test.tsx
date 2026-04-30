@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-let mockState: any;
+let mockState: { token: string | null; refreshMe: ReturnType<typeof vi.fn> };
 const refreshMeMock = vi.fn();
 vi.mock("../stores/auth-store", () => ({
-  useAuthStore: (selector: (s: any) => unknown) => selector(mockState),
+  useAuthStore: (selector: (s: unknown) => unknown) => selector(mockState),
 }));
 
 vi.mock("../pages/ProjectCreatePage", () => ({
@@ -42,16 +42,18 @@ vi.mock("../pages/EvaluatePage", () => ({
 vi.mock("../pages/PublishPage", () => ({
   default: () => <div data-testid="page-publish">publish</div>,
 }));
-vi.mock("../components/layout/AppShell", () => ({
-  default: () => {
-    const { Outlet } = require("react-router-dom");
-    return (
+vi.mock("../components/layout/AppShell", async () => {
+  const { Outlet } = await vi.importActual<typeof import("react-router-dom")>(
+    "react-router-dom"
+  );
+  return {
+    default: () => (
       <div data-testid="app-shell">
         <Outlet />
       </div>
-    );
-  },
-}));
+    ),
+  };
+});
 
 import App from "../App";
 

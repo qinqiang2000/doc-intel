@@ -122,7 +122,7 @@ describe("WorkspacePage", () => {
       items: [], total: 0, page: 1, page_size: 1,
     });
     renderPage("/workspaces/demo/projects/p-1/workspace");
-    expect(await screen.findByText(/请先上传文档/)).toBeInTheDocument();
+    expect(await screen.findByText(/upload a document/i)).toBeInTheDocument();
   });
 
   it("does NOT redirect when ?doc= present even if first doc differs", async () => {
@@ -260,7 +260,7 @@ describe("WorkspacePage", () => {
     const tuneBtn = await screen.findByRole("button", { name: /Tune/ });
     await user.click(tuneBtn);
     expect(usePredictStore.getState().correctionConsoleOpen).toBe(true);
-    expect(screen.getByPlaceholderText(/自然语言/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/natural language/i)).toBeInTheDocument();
   });
 
   it("clicking 📜 toolbar button opens PromptHistoryPanel", async () => {
@@ -270,7 +270,7 @@ describe("WorkspacePage", () => {
     renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
     const histBtn = await screen.findByRole("button", { name: /📜/ });
     await user.click(histBtn);
-    expect(await screen.findByText(/Prompt 历史/)).toBeInTheDocument();
+    expect(await screen.findByText(/Prompt history/i)).toBeInTheDocument();
   });
 
   it("PromptHistoryPanel + NLCorrectionConsole can be open simultaneously", async () => {
@@ -281,7 +281,7 @@ describe("WorkspacePage", () => {
       correctionConsoleOpen: true,
     });
     renderPage("/workspaces/demo/projects/p-1/workspace?doc=d-1");
-    expect(await screen.findByText(/Prompt 历史/)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/自然语言/)).toBeInTheDocument();
+    expect(await screen.findByText(/Prompt history/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/natural language/i)).toBeInTheDocument();
   });
 });

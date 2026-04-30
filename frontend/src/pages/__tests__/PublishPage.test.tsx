@@ -150,7 +150,7 @@ describe("PublishPage", () => {
     const user = userEvent.setup();
     renderPage("/workspaces/demo/projects/p-1/api");
     await screen.findByText(/dik_AbCdEfGh···/);
-    await user.click(await screen.findByTitle(/Delete key/i));
+    await user.click(await screen.findByTitle(/Delete/i));
     const { waitFor } = await import("@testing-library/react");
     await waitFor(() => expect(deleted).toBe(true));
     await waitFor(() => expect(screen.queryByText(/dik_AbCdEfGh···/)).not.toBeInTheDocument());

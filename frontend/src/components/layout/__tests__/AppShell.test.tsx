@@ -14,10 +14,17 @@ vi.mock("react-router-dom", async () => {
 const switchBySlugMock = vi.fn();
 const logoutMock = vi.fn();
 
-let mockState: any;
+let mockState: {
+  user: { id: string; email: string; display_name: string; is_active: boolean };
+  workspaces: Array<{ id: string; name: string; slug: string; role: string }>;
+  currentWorkspaceId: string | null;
+  meLoaded: boolean;
+  switchWorkspaceBySlug: ReturnType<typeof vi.fn>;
+  logout: ReturnType<typeof vi.fn>;
+};
 
 vi.mock("../../../stores/auth-store", () => ({
-  useAuthStore: (selector: (s: any) => unknown) => selector(mockState),
+  useAuthStore: (selector: (s: unknown) => unknown) => selector(mockState),
 }));
 
 import AppShell from "../AppShell";
@@ -78,7 +85,7 @@ describe("AppShell", () => {
     const user = userEvent.setup();
     renderShell();
 
-    await user.click(screen.getByRole("button", { name: /退出/ }));
+    await user.click(screen.getByRole("button", { name: /Sign out/i }));
 
     expect(logoutMock).toHaveBeenCalled();
     expect(navigateMock).toHaveBeenCalledWith("/login");
@@ -96,7 +103,7 @@ describe("AppShell", () => {
 
   it("settings link visible only for workspace owner", () => {
     renderShell("/workspaces/demo");
-    expect(screen.getByRole("button", { name: /设置/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Settings$/i })).toBeInTheDocument();
   });
 
   it("settings link NOT visible when current role is member", () => {
@@ -104,7 +111,7 @@ describe("AppShell", () => {
       { id: "ws-1", name: "Demo", slug: "demo", role: "member" },
     ];
     renderShell("/workspaces/demo");
-    expect(screen.queryByRole("button", { name: /设置/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Settings$/i })).not.toBeInTheDocument();
   });
 
   it("calls switchWorkspaceBySlug when URL slug changes", () => {

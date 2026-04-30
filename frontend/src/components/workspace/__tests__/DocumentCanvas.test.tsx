@@ -66,7 +66,7 @@ describe("DocumentCanvas", () => {
         overlay={<span data-testid="ignored-overlay">should not show</span>}
       />
     );
-    expect(screen.getByText(/暂不支持预览/)).toBeInTheDocument();
+    expect(screen.getByText(/Preview not supported/i)).toBeInTheDocument();
     expect(screen.queryByTestId("ignored-overlay")).not.toBeInTheDocument();
   });
 

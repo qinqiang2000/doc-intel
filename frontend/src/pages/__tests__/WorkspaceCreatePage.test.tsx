@@ -13,7 +13,7 @@ vi.mock("react-router-dom", async () => {
 
 const createWorkspaceMock = vi.fn();
 vi.mock("../../stores/auth-store", () => ({
-  useAuthStore: (selector: (s: any) => unknown) =>
+  useAuthStore: (selector: (s: unknown) => unknown) =>
     selector({ createWorkspace: createWorkspaceMock }),
 }));
 
@@ -40,7 +40,7 @@ describe("WorkspaceCreatePage", () => {
   it("auto-fills slug from name (lowercase, hyphenated)", async () => {
     const user = userEvent.setup();
     renderPage();
-    const nameInput = screen.getByLabelText(/名称/);
+    const nameInput = screen.getByLabelText(/Name/i);
     const slugInput = screen.getByLabelText(/Slug/i) as HTMLInputElement;
 
     await user.type(nameInput, "Japan Receipts");
@@ -58,12 +58,12 @@ describe("WorkspaceCreatePage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/名称/), "Demo");
+    await user.type(screen.getByLabelText(/Name/i), "Demo");
     // Slug auto-fills as 'demo'; clear and set explicitly
     const slugInput = screen.getByLabelText(/Slug/i);
     await user.clear(slugInput);
     await user.type(slugInput, "demo-ws");
-    await user.click(screen.getByRole("button", { name: /创建/ }));
+    await user.click(screen.getByRole("button", { name: /Create workspace/i }));
 
     await waitFor(() => {
       expect(createWorkspaceMock).toHaveBeenCalledWith({
@@ -85,10 +85,10 @@ describe("WorkspaceCreatePage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.type(screen.getByLabelText(/名称/), "X");
+    await user.type(screen.getByLabelText(/Name/i), "X");
     await user.clear(screen.getByLabelText(/Slug/i));
     await user.type(screen.getByLabelText(/Slug/i), "taken-slug");
-    await user.click(screen.getByRole("button", { name: /创建/ }));
+    await user.click(screen.getByRole("button", { name: /Create workspace/i }));
 
     expect(await screen.findByText(/Taken/)).toBeInTheDocument();
     expect(navigateMock).not.toHaveBeenCalled();

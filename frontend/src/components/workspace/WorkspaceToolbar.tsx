@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { usePredictStore } from "../../stores/predict-store";
 
 interface Props {
@@ -15,6 +16,7 @@ export default function WorkspaceToolbar({
   workspaceSlug, projectId, projectName, documents, currentDocId, onSwitch,
 }: Props) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const loadNextUnreviewed = usePredictStore((s) => s.loadNextUnreviewed);
   const setPromptHistoryOpen = usePredictStore((s) => s.setPromptHistoryOpen);
   const promptHistoryOpen = usePredictStore((s) => s.promptHistoryOpen);
@@ -30,35 +32,35 @@ export default function WorkspaceToolbar({
     if (doc) {
       onSwitch(doc.id);
     } else {
-      alert("已全部 predict 过");
+      alert(t("documents.allPredicted"));
     }
   }
 
   return (
-    <div className="bg-[#1a1d27] border-b border-[#2a2e3d] px-4 py-2 flex items-center gap-3 text-sm">
+    <div className="bg-surface border-b border-default px-4 py-2 flex items-center gap-3 text-sm">
       <button
         type="button"
         onClick={() => navigate(`/workspaces/${workspaceSlug}/projects/${projectId}`)}
-        className="text-[#94a3b8] hover:text-[#e2e8f0] flex items-center gap-1"
-        title="回到项目列表"
+        className="text-muted hover:text-primary flex items-center gap-1"
+        title={t("toolbar.backToProject")}
       >
         ◀ <span>{projectName}</span>
       </button>
 
-      <span className="text-[#2a2e3d]">|</span>
+      <span className="text-default">|</span>
 
       <span className="text-xs">📄</span>
       <div className="relative">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-1 hover:border-[#6366f1] flex items-center gap-2"
+          className="bg-surface-input border border-default rounded px-3 py-1 hover:border-accent flex items-center gap-2"
         >
-          <span className="font-medium">{current ? current.filename : "(选择文档)"}</span>
-          <span className="text-[#64748b]">▾</span>
+          <span className="font-medium">{current ? current.filename : t("toolbar.selectDocument")}</span>
+          <span className="text-subtle">▾</span>
         </button>
         {open && (
-          <div className="absolute left-0 top-full mt-1 w-64 bg-[#1a1d27] border border-[#2a2e3d] rounded shadow-lg z-50 max-h-80 overflow-auto">
+          <div className="absolute left-0 top-full mt-1 w-64 bg-surface border border-default rounded shadow-lg z-50 max-h-80 overflow-auto">
             {documents.map((d) => (
               <button
                 key={d.id}
@@ -67,8 +69,8 @@ export default function WorkspaceToolbar({
                   onSwitch(d.id);
                   setOpen(false);
                 }}
-                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[#232736] ${
-                  d.id === currentDocId ? "text-[#818cf8]" : "text-[#e2e8f0]"
+                className={`w-full text-left px-3 py-1.5 text-xs hover:bg-surface-hover ${
+                  d.id === currentDocId ? "text-accent-hover" : "text-primary"
                 }`}
               >
                 {d.id === currentDocId && "● "}{d.filename}
@@ -82,31 +84,31 @@ export default function WorkspaceToolbar({
         type="button"
         disabled={!prev}
         onClick={() => prev && onSwitch(prev.id)}
-        className="text-xs text-[#94a3b8] hover:text-[#e2e8f0] disabled:opacity-30"
+        className="text-xs text-muted hover:text-primary disabled:opacity-30"
       >
-        ← 上一份
+        {t("toolbar.previousDoc")}
       </button>
       <button
         type="button"
         disabled={!next}
         onClick={() => next && onSwitch(next.id)}
-        className="text-xs text-[#94a3b8] hover:text-[#e2e8f0] disabled:opacity-30"
+        className="text-xs text-muted hover:text-primary disabled:opacity-30"
       >
-        下一份 →
+        {t("toolbar.nextDoc")}
       </button>
 
       <button
         type="button"
         onClick={() => void onNext()}
-        className="text-xs text-[#6366f1] hover:underline ml-auto"
+        className="text-xs text-accent hover:underline ml-auto"
       >
-        ▶ Next Unreviewed
+        {t("toolbar.nextUnreviewed")}
       </button>
       <button
         type="button"
         onClick={() => setPromptHistoryOpen(!promptHistoryOpen)}
-        title="Prompt 历史"
-        className="text-xs text-[#94a3b8] hover:text-[#e2e8f0]"
+        title={t("workspacePage.promptHistoryTooltip")}
+        className="text-xs text-muted hover:text-primary"
       >
         📜
       </button>

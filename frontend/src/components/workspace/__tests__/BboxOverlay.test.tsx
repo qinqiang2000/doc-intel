@@ -366,7 +366,7 @@ describe("BboxOverlay", () => {
     fireEvent.pointerMove(overlay, { clientX: 300, clientY: 200, pointerId: 1 });
     fireEvent.pointerUp(overlay,   { clientX: 300, clientY: 200, pointerId: 1 });
 
-    const input = await screen.findByPlaceholderText(/字段名/);
+    const input = await screen.findByPlaceholderText(/Field name/i);
     const user = userEvent.setup();
     await user.type(input, "test_field{Enter}");
 
@@ -398,7 +398,7 @@ describe("BboxOverlay", () => {
     fireEvent.pointerMove(overlay, { clientX: 105, clientY: 105, pointerId: 1 });
     fireEvent.pointerUp(overlay,   { clientX: 105, clientY: 105, pointerId: 1 });
 
-    expect(screen.queryByPlaceholderText(/字段名/)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Field name/i)).not.toBeInTheDocument();
     expect(onCreate).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { api, extractApiError } from "../lib/api-client";
 import AdvancedPanel from "../components/workspace/AdvancedPanel";
 import BboxOverlay from "../components/workspace/BboxOverlay";
@@ -25,6 +26,7 @@ export default function WorkspacePage() {
   const { slug, pid } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const docId = searchParams.get("doc");
 
   const [docs, setDocs] = useState<DocBrief[]>([]);
@@ -51,7 +53,6 @@ export default function WorkspacePage() {
 
   const imgRef = useRef<HTMLImageElement | null>(null);
 
-  // 1) Bootstrap docs list + redirect-on-missing
   useEffect(() => {
     if (!pid || !slug) return;
     let cancelled = false;
@@ -76,7 +77,6 @@ export default function WorkspacePage() {
     return () => { cancelled = true; };
   }, [pid, slug, docId, navigate]);
 
-  // 2) Doc detail + preview blob
   useEffect(() => {
     if (!pid || !docId) return;
     let cancelled = false;
@@ -105,9 +105,6 @@ export default function WorkspacePage() {
     };
   }, [pid, docId]);
 
-  // 3) Load existing results + annotations. NEVER auto-predict — user must
-  // click "Run prediction" / Re-predict explicitly (mirrors label-studio's
-  // default `evaluate_predictions_automatically=False`).
   useEffect(() => {
     if (!pid || !docId) return;
     let cancelled = false;
@@ -115,7 +112,7 @@ export default function WorkspacePage() {
       try {
         await loadResults(pid, docId);
       } catch (e) {
-        if (!cancelled) setError((e as { message?: string })?.message ?? "Load failed");
+        if (!cancelled) setError((e as { message?: string })?.message ?? t("common.loadFailed"));
       }
       try {
         const arr = await loadAnnotations(docId);
@@ -126,12 +123,10 @@ export default function WorkspacePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pid, docId]);
 
-  // Auto-advance step 1 once result loads
   useEffect(() => {
     if (result && currentStep <= 1 && currentStep !== 1) setStep(1);
   }, [result, currentStep, setStep]);
 
-  // Auto-advance step 3 when format becomes non-flat
   useEffect(() => {
     if (apiFormat !== "flat" && currentStep < 3) setStep(3);
   }, [apiFormat, currentStep, setStep]);
@@ -150,11 +145,20 @@ export default function WorkspacePage() {
     return out;
   }
 
-  async function handleDelete(id: string): Promise<void> {
+  async function handleDeleteRemote(id: string): Promise<void> {
     if (!docId) return;
     await deleteAnnotation(docId, id);
+  }
+
+  function handleRemoveLocal(id: string) {
     setAnnotations((arr) => arr.filter((a) => a.id !== id));
     if (currentStep < 2) setStep(2);
+  }
+
+  function handleRestoreLocal(a: Annotation) {
+    setAnnotations((arr) =>
+      arr.some((x) => x.id === a.id) ? arr : [...arr, a]
+    );
   }
 
   async function handleAdd(input: NewAnnotation): Promise<Annotation> {
@@ -180,17 +184,17 @@ export default function WorkspacePage() {
 
   if (empty) {
     return (
-      <div className="text-center text-[#94a3b8] py-12">
-        <div className="text-sm mb-2">这个 Project 还没有任何文档</div>
-        <div className="text-xs text-[#64748b]">请先上传文档</div>
+      <div className="text-center text-muted py-12">
+        <div className="text-sm mb-2">{t("documents.noDocumentsInProject")}</div>
+        <div className="text-xs text-subtle">{t("documents.uploadFirst")}</div>
       </div>
     );
   }
   if (error) {
-    return <div className="text-center text-[#ef4444] py-12 text-sm">{error}</div>;
+    return <div className="text-center text-danger py-12 text-sm">{error}</div>;
   }
   if (!docId || !currentDoc) {
-    return <div className="text-center text-[#94a3b8] py-12 text-sm">Loading workspace...</div>;
+    return <div className="text-center text-muted py-12 text-sm">{t("workspacePage.loadingWorkspace")}</div>;
   }
 
   const isImage = currentDoc.mime_type.startsWith("image/");
@@ -225,7 +229,7 @@ export default function WorkspacePage() {
         predicting={loading}
         onRunPredict={() => {
           void predictSingle(pid ?? "", docId).catch((e) =>
-            setError((e as { message?: string })?.message ?? "Predict failed")
+            setError((e as { message?: string })?.message ?? t("workspacePage.predictFailed"))
           );
         }}
       />
@@ -233,7 +237,7 @@ export default function WorkspacePage() {
         <div className="flex-1 overflow-auto p-3">
           <AdvancedPanel projectId={pid ?? ""} documentId={docId} />
           {loading && !result ? (
-            <div className="text-sm text-[#94a3b8] p-4">⏳ Predicting (10-30s)...</div>
+            <div className="text-sm text-muted p-4">{t("workspacePage.predictingWithEta")}</div>
           ) : previewObjectUrl ? (
             isImage ? (
               <div className="relative inline-block">
@@ -268,21 +272,23 @@ export default function WorkspacePage() {
               />
             )
           ) : (
-            <div className="text-sm text-[#94a3b8] p-4">⏳ Loading preview...</div>
+            <div className="text-sm text-muted p-4">{t("workspacePage.loadingPreview")}</div>
           )}
         </div>
-        <div className="w-[360px] border-l border-[#2a2e3d] overflow-auto p-3">
-          <div className="text-xs uppercase font-semibold tracking-wider text-[#94a3b8] mb-2">
-            Fields
+        <div className="w-[360px] border-l border-default overflow-auto p-3">
+          <div className="text-xs uppercase font-semibold tracking-wider text-muted mb-2">
+            {t("workspacePage.fieldsTitle")}
           </div>
           <AnnotationEditor
             annotations={annotations}
             onPatch={handlePatch}
-            onDelete={handleDelete}
+            onDelete={handleDeleteRemote}
             onAdd={handleAdd}
+            onRemoveLocal={handleRemoveLocal}
+            onRestoreLocal={handleRestoreLocal}
           />
         </div>
-        <div className="w-[380px] border-l border-[#2a2e3d] overflow-auto p-3">
+        <div className="w-[380px] border-l border-default overflow-auto p-3">
           <JsonPreview
             structuredData={result?.structured_data ?? null}
             version={result?.version ?? null}

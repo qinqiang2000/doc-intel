@@ -34,7 +34,7 @@ describe("PromptHistoryPanel", () => {
     usePredictStore.setState({ promptHistoryOpen: false });
     mock.onGet("/api/v1/projects/p-1/prompt-versions").reply(200, []);
     render(<PromptHistoryPanel projectId="p-1" />);
-    expect(screen.queryByText(/Prompt 历史/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Prompt history/i)).not.toBeInTheDocument();
   });
 
   it("renders versions in DESC order with active badged", () => {

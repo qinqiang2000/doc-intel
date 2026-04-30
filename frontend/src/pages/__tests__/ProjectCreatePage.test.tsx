@@ -21,7 +21,7 @@ vi.mock("../../stores/auth-store", () => ({
 
 const loadTemplatesMock = vi.fn().mockResolvedValue(undefined);
 const createProjectMock = vi.fn();
-let projStoreState: unknown = {
+const projStoreState: unknown = {
   templates: [
     {
       key: "custom",
@@ -77,7 +77,7 @@ describe("ProjectCreatePage", () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByText(/自定义/));
-    const nameInput = screen.getByLabelText(/名称/);
+    const nameInput = screen.getByLabelText(/Name/i);
     await user.type(nameInput, "Japan Receipts");
     const slug = screen.getByLabelText(/Slug/) as HTMLInputElement;
     expect(slug.value).toBe("japan-receipts");
@@ -93,8 +93,8 @@ describe("ProjectCreatePage", () => {
     renderPage();
 
     await user.click(screen.getByText(/日本領収書/));
-    await user.type(screen.getByLabelText(/名称/), "Japan");
-    await user.click(screen.getByRole("button", { name: /创建/ }));
+    await user.type(screen.getByLabelText(/Name/i), "Japan");
+    await user.click(screen.getByRole("button", { name: /Create project/i }));
 
     await waitFor(() => {
       expect(createProjectMock).toHaveBeenCalledWith("ws-1", expect.objectContaining({
@@ -113,13 +113,13 @@ describe("ProjectCreatePage", () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByText(/自定义/));
-    await user.type(screen.getByLabelText(/名称/), "X-name");
-    await user.click(screen.getByRole("button", { name: /创建/ }));
+    await user.type(screen.getByLabelText(/Name/i), "X-name");
+    await user.click(screen.getByRole("button", { name: /Create project/i }));
     expect(await screen.findByText(/Slug taken/)).toBeInTheDocument();
   });
 
   it("submit button disabled until template chosen", () => {
     renderPage();
-    expect(screen.getByRole("button", { name: /创建/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Create project/i })).toBeDisabled();
   });
 });

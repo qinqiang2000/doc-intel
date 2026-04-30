@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { usePredictStore } from "../../stores/predict-store";
 
 interface ResultTabsProps {
@@ -22,15 +23,16 @@ function formatTime(iso: string): string {
 export default function ResultTabs({
   documentId, onRunPredict, predicting,
 }: ResultTabsProps) {
+  const { t } = useTranslation();
   const list = usePredictStore((s) => s.resultsByDoc[documentId] ?? []);
   const selectedId = usePredictStore((s) => s.selectedResultByDoc[documentId]);
   const setSelected = usePredictStore((s) => s.setSelectedResult);
 
   return (
-    <div className="flex items-center gap-1 px-3 py-2 border-b border-[#2a2e3d] overflow-x-auto bg-[#0f1117]">
+    <div className="flex items-center gap-1 px-3 py-2 border-b border-default overflow-x-auto bg-canvas">
       {list.length === 0 ? (
-        <div className="text-xs text-[#94a3b8]">
-          No predictions yet — click Re-predict in Advanced settings to run extraction.
+        <div className="text-xs text-muted">
+          {t("workspacePage.noPredictionsYet")}
         </div>
       ) : (
         list.map((r) => {
@@ -44,8 +46,8 @@ export default function ResultTabs({
               className={
                 "flex items-center gap-2 px-3 py-1 rounded-t-md text-xs whitespace-nowrap " +
                 (isActive
-                  ? "bg-[#1e2230] text-white border-b-2 border-[#3b82f6]"
-                  : "text-[#94a3b8] hover:text-white hover:bg-[#1a1d27]")
+                  ? "bg-surface text-primary border-b-2 border-info"
+                  : "text-muted hover:text-primary hover:bg-surface")
               }
             >
               <span className="font-mono">{shortKey(r.processor_key)}</span>
@@ -60,9 +62,9 @@ export default function ResultTabs({
             type="button"
             onClick={onRunPredict}
             disabled={predicting}
-            className="px-2 py-1 text-xs rounded bg-[#3b82f6] hover:bg-[#2563eb] disabled:opacity-50 text-white"
+            className="px-2 py-1 text-xs rounded bg-info hover:bg-accent-hover disabled:opacity-50 text-white"
           >
-            {predicting ? "Predicting..." : "+ Run prediction"}
+            {predicting ? t("workspacePage.predicting") : t("workspacePage.runPrediction")}
           </button>
         )}
       </div>

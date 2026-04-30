@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../stores/auth-store";
 import { useProjectStore } from "../stores/project-store";
 
 export default function ProjectListPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const workspaces = useAuthStore((s) => s.workspaces);
   const currentId = useAuthStore((s) => s.currentWorkspaceId);
   const current = workspaces.find((w) => w.id === currentId);
@@ -18,15 +20,16 @@ export default function ProjectListPage() {
     if (current) {
       void loadProjects(current.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- effect intentionally keyed on current.id; loadProjects is a stable zustand action
   }, [current?.id, loadProjects]);
 
   if (!current) {
-    return <div className="text-[#94a3b8]">加载中...</div>;
+    return <div className="text-muted">{t("common.loading")}</div>;
   }
 
   async function onDelete(projectId: string) {
     if (!current) return;
-    if (!confirm("软删 Project？后续可在管理页恢复。")) return;
+    if (!confirm(t("project.deleteProjectConfirm"))) return;
     await deleteProject(current.id, projectId);
   }
 
@@ -37,27 +40,25 @@ export default function ProjectListPage() {
         <button
           type="button"
           onClick={() => navigate(`/workspaces/${current.slug}/projects/new`)}
-          className="bg-[#6366f1] hover:bg-[#818cf8] text-white font-semibold px-4 py-2 rounded text-sm"
+          className="bg-accent hover:bg-accent-hover text-white font-semibold px-4 py-2 rounded text-sm"
         >
-          + 新建 Project
+          {t("project.newProject")}
         </button>
       </div>
 
       {loading && projects.length === 0 ? (
-        <div className="text-[#64748b] text-sm">加载中...</div>
+        <div className="text-subtle text-sm">{t("common.loading")}</div>
       ) : projects.length === 0 ? (
-        <div className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-6 text-center">
-          <div className="text-[#94a3b8] text-sm mb-1">还没有 Project</div>
-          <div className="text-xs text-[#64748b]">
-            点击 "+ 新建 Project" 选模板开始
-          </div>
+        <div className="bg-surface border border-default rounded p-6 text-center">
+          <div className="text-muted text-sm mb-1">{t("project.noProjects")}</div>
+          <div className="text-xs text-subtle">{t("project.noProjectsHint")}</div>
         </div>
       ) : (
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {projects.map((p) => (
             <li
               key={p.id}
-              className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-4 flex flex-col gap-2"
+              className="bg-surface border border-default rounded p-4 flex flex-col gap-2"
             >
               <button
                 type="button"
@@ -67,12 +68,12 @@ export default function ProjectListPage() {
                 className="text-left"
               >
                 <div className="font-semibold text-base">{p.name}</div>
-                <div className="text-xs text-[#64748b]">
+                <div className="text-xs text-subtle">
                   slug: {p.slug}
                   {p.template_key ? ` · ${p.template_key}` : ""}
                 </div>
                 {p.description && (
-                  <div className="text-xs text-[#94a3b8] mt-1 line-clamp-2">
+                  <div className="text-xs text-muted mt-1 line-clamp-2">
                     {p.description}
                   </div>
                 )}
@@ -85,16 +86,16 @@ export default function ProjectListPage() {
                       `/workspaces/${current.slug}/projects/${p.id}/settings`
                     )
                   }
-                  className="text-xs text-[#94a3b8] hover:text-[#e2e8f0]"
+                  className="text-xs text-muted hover:text-primary"
                 >
-                  设置
+                  {t("common.settings")}
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(p.id)}
-                  className="text-xs text-[#ef4444] hover:underline"
+                  className="text-xs text-danger hover:underline"
                 >
-                  删除
+                  {t("common.delete")}
                 </button>
               </div>
             </li>

@@ -46,7 +46,7 @@ describe("BatchPredictDrawer", () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
     render(<BatchPredictDrawer onClose={onClose} />);
-    await user.click(screen.getByRole("button", { name: /完成|关闭/ }));
+    await user.click(screen.getByRole("button", { name: /Done|Close/i }));
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -62,7 +62,7 @@ describe("BatchPredictDrawer", () => {
       },
     });
     render(<BatchPredictDrawer onClose={vi.fn()} />);
-    expect(screen.getByText(/1.*成功/)).toBeInTheDocument();
-    expect(screen.getByText(/1.*失败/)).toBeInTheDocument();
+    expect(screen.getByText(/1.*succeeded/i)).toBeInTheDocument();
+    expect(screen.getByText(/1.*failed/i)).toBeInTheDocument();
   });
 });

@@ -23,7 +23,7 @@ describe("AdvancedPanel", () => {
     const user = userEvent.setup();
     render(<AdvancedPanel projectId="p-1" documentId="d-1" />);
     expect(screen.queryByLabelText(/processor/i)).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /高级/ }));
+    await user.click(screen.getByRole("button", { name: /Advanced/i }));
     expect(screen.getByLabelText(/processor/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/prompt/i)).toBeInTheDocument();
   });
@@ -38,7 +38,7 @@ describe("AdvancedPanel", () => {
   it("Re-predict passes overrides when fields filled", async () => {
     const user = userEvent.setup();
     render(<AdvancedPanel projectId="p-1" documentId="d-1" />);
-    await user.click(screen.getByRole("button", { name: /高级/ }));
+    await user.click(screen.getByRole("button", { name: /Advanced/i }));
     await user.type(screen.getByLabelText(/processor/i), "openai|gpt-4o");
     await user.type(screen.getByLabelText(/prompt/i), "custom");
     await user.click(screen.getByRole("button", { name: /Re-predict/ }));
@@ -51,14 +51,14 @@ describe("AdvancedPanel", () => {
   it("override values persist in store across remounts", async () => {
     const user = userEvent.setup();
     const { unmount } = render(<AdvancedPanel projectId="p-1" documentId="d-1" />);
-    await user.click(screen.getByRole("button", { name: /高级/ }));
+    await user.click(screen.getByRole("button", { name: /Advanced/i }));
     await user.type(screen.getByLabelText(/processor/i), "mock");
     unmount();
 
     expect(usePredictStore.getState().processorOverride).toBe("mock");
 
     render(<AdvancedPanel projectId="p-1" documentId="d-2" />);
-    await user.click(screen.getByRole("button", { name: /高级/ }));
+    await user.click(screen.getByRole("button", { name: /Advanced/i }));
     expect(screen.getByLabelText(/processor/i)).toHaveValue("mock");
   });
 });

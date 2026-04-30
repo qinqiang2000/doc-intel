@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { api, extractApiError } from "../lib/api-client";
 import { useAuthStore } from "../stores/auth-store";
 
@@ -13,6 +14,7 @@ interface Member {
 export default function WorkspaceSettingsPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const workspaces = useAuthStore((s) => s.workspaces);
   const refreshMe = useAuthStore((s) => s.refreshMe);
   const ws = workspaces.find((w) => w.slug === slug);
@@ -40,6 +42,7 @@ export default function WorkspaceSettingsPage() {
     if (ws) {
       void load();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- effect intentionally keyed on ws.id only; load is a local closure and ws object identity is irrelevant
   }, [ws?.id]);
 
   async function onInvite(e: FormEvent) {
@@ -52,8 +55,9 @@ export default function WorkspaceSettingsPage() {
         email: inviteEmail,
         role: "member",
       });
+      const invited = inviteEmail;
       setInviteEmail("");
-      setInfo(`已邀请 ${inviteEmail}`);
+      setInfo(t("workspace.invited", { email: invited }));
       await load();
     } catch (e) {
       setError(extractApiError(e).message);
@@ -62,7 +66,7 @@ export default function WorkspaceSettingsPage() {
 
   async function onRemove(userId: string) {
     if (!ws) return;
-    if (!confirm("移除该成员？")) return;
+    if (!confirm(t("workspace.removeMemberConfirm"))) return;
     try {
       await api.delete(`/api/v1/workspaces/${ws.id}/members/${userId}`);
       await load();
@@ -73,7 +77,7 @@ export default function WorkspaceSettingsPage() {
 
   async function onDeleteWorkspace() {
     if (!ws) return;
-    if (!confirm(`删除 workspace "${ws.name}"？此操作不可恢复。`)) return;
+    if (!confirm(t("workspace.deleteWorkspaceConfirm", { name: ws.name }))) return;
     try {
       await api.delete(`/api/v1/workspaces/${ws.id}`);
       await refreshMe();
@@ -83,19 +87,19 @@ export default function WorkspaceSettingsPage() {
     }
   }
 
-  if (!ws) return <div className="text-[#94a3b8]">未找到 workspace</div>;
+  if (!ws) return <div className="text-muted">{t("workspace.notFound")}</div>;
   if (ws.role !== "owner") {
     return (
-      <div className="text-[#ef4444]">只有 owner 可以访问设置页</div>
+      <div className="text-danger">{t("workspace.ownerOnly")}</div>
     );
   }
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-xl font-bold mb-6">{ws.name} · 设置</h1>
+      <h1 className="text-xl font-bold mb-6">{t("workspace.settingsHeader", { name: ws.name })}</h1>
 
-      <section className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-4 mb-4">
-        <h2 className="text-sm font-semibold mb-3">邀请成员</h2>
+      <section className="bg-surface border border-default rounded p-4 mb-4">
+        <h2 className="text-sm font-semibold mb-3">{t("workspace.inviteMember")}</h2>
         <form onSubmit={onInvite} className="flex gap-2">
           <input
             type="email"
@@ -103,24 +107,26 @@ export default function WorkspaceSettingsPage() {
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
             required
-            className="flex-1 bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 text-sm focus:border-[#6366f1] outline-none"
+            className="flex-1 bg-surface-input border border-default rounded px-3 py-2 text-sm focus:border-accent outline-none"
           />
           <button
             type="submit"
-            className="bg-[#6366f1] hover:bg-[#818cf8] text-white font-semibold px-4 rounded text-sm"
+            className="bg-accent hover:bg-accent-hover text-white font-semibold px-4 rounded text-sm"
           >
-            邀请
+            {t("workspace.invite")}
           </button>
         </form>
-        {info && <div className="text-[#22c55e] text-xs mt-2">{info}</div>}
+        {info && <div className="text-success text-xs mt-2">{info}</div>}
       </section>
 
-      <section className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-4 mb-4">
-        <h2 className="text-sm font-semibold mb-3">成员 ({members.length})</h2>
+      <section className="bg-surface border border-default rounded p-4 mb-4">
+        <h2 className="text-sm font-semibold mb-3">
+          {t("workspace.membersWithCount", { count: members.length })}
+        </h2>
         {loading ? (
-          <div className="text-[#64748b] text-sm">加载中...</div>
+          <div className="text-subtle text-sm">{t("common.loading")}</div>
         ) : (
-          <ul className="divide-y divide-[#2a2e3d]">
+          <ul className="divide-y divide-default">
             {members.map((m) => (
               <li
                 key={m.user_id}
@@ -128,7 +134,7 @@ export default function WorkspaceSettingsPage() {
               >
                 <div>
                   <div className="text-sm">{m.display_name}</div>
-                  <div className="text-xs text-[#64748b]">
+                  <div className="text-xs text-subtle">
                     {m.email} · {m.role}
                   </div>
                 </div>
@@ -136,9 +142,9 @@ export default function WorkspaceSettingsPage() {
                   <button
                     type="button"
                     onClick={() => onRemove(m.user_id)}
-                    className="text-xs text-[#ef4444] hover:underline"
+                    className="text-xs text-danger hover:underline"
                   >
-                    移除
+                    {t("common.remove")}
                   </button>
                 )}
               </li>
@@ -147,18 +153,18 @@ export default function WorkspaceSettingsPage() {
         )}
       </section>
 
-      <section className="bg-[#1a1d27] border border-[#ef4444] rounded p-4">
-        <h2 className="text-sm font-semibold mb-2 text-[#ef4444]">危险区</h2>
+      <section className="bg-surface border border-danger rounded p-4">
+        <h2 className="text-sm font-semibold mb-2 text-danger">{t("common.dangerZone")}</h2>
         <button
           type="button"
           onClick={onDeleteWorkspace}
-          className="bg-[#ef4444] hover:bg-[#dc2626] text-white font-semibold px-4 py-2 rounded text-sm"
+          className="bg-danger hover:bg-danger-hover text-white font-semibold px-4 py-2 rounded text-sm"
         >
-          删除 Workspace
+          {t("workspace.deleteWorkspace")}
         </button>
       </section>
 
-      {error && <div className="text-[#ef4444] text-xs mt-4">{error}</div>}
+      {error && <div className="text-danger text-xs mt-4">{error}</div>}
     </div>
   );
 }

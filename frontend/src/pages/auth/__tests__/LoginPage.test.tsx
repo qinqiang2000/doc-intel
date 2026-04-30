@@ -15,7 +15,7 @@ vi.mock("react-router-dom", async () => {
 // Mock the auth-store
 const loginMock = vi.fn();
 vi.mock("../../../stores/auth-store", () => ({
-  useAuthStore: (selector: (s: any) => unknown) =>
+  useAuthStore: (selector: (s: unknown) => unknown) =>
     selector({ login: loginMock, loading: false }),
 }));
 
@@ -42,8 +42,8 @@ describe("LoginPage", () => {
   it("renders email + password fields and a submit button", () => {
     renderPage();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/密码/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /登录/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
   });
 
   it("submits credentials and navigates to /dashboard on success", async () => {
@@ -52,8 +52,8 @@ describe("LoginPage", () => {
     renderPage();
 
     await user.type(screen.getByLabelText(/email/i), "alice@x.com");
-    await user.type(screen.getByLabelText(/密码/i), "secret123");
-    await user.click(screen.getByRole("button", { name: /登录/i }));
+    await user.type(screen.getByLabelText(/password/i), "secret123");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith("alice@x.com", "secret123");
@@ -70,8 +70,8 @@ describe("LoginPage", () => {
     renderPage();
 
     await user.type(screen.getByLabelText(/email/i), "alice@x.com");
-    await user.type(screen.getByLabelText(/密码/i), "wrong");
-    await user.click(screen.getByRole("button", { name: /登录/i }));
+    await user.type(screen.getByLabelText(/password/i), "wrong");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     expect(
       await screen.findByText(/Email or password incorrect/i)
@@ -81,7 +81,7 @@ describe("LoginPage", () => {
 
   it("links to /register", () => {
     renderPage();
-    const link = screen.getByRole("link", { name: /注册/i });
+    const link = screen.getByRole("link", { name: /sign up/i });
     expect(link).toHaveAttribute("href", "/register");
   });
 });

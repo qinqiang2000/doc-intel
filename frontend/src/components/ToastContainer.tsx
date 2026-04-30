@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { type Toast, onToast, onDismiss } from '../lib/toast'
@@ -17,13 +17,29 @@ const styles = {
   warning: 'bg-amber-900/90 border-amber-500/40 text-amber-100',
 }
 
-function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
+function ToastItem({
+  toast,
+  onRemove,
+}: {
+  toast: Toast
+  onRemove: (id: string, opts: { skipTimeout?: boolean }) => void
+}) {
   const Icon = icons[toast.type]
+  const actionFiredRef = useRef(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => onRemove(toast.id), toast.duration ?? 3500)
+    const timer = setTimeout(
+      () => onRemove(toast.id, { skipTimeout: actionFiredRef.current }),
+      toast.duration ?? 3500,
+    )
     return () => clearTimeout(timer)
   }, [toast.id, toast.duration, onRemove])
+
+  function handleAction() {
+    actionFiredRef.current = true
+    toast.action?.onClick()
+    onRemove(toast.id, { skipTimeout: true })
+  }
 
   return (
     <div
@@ -35,8 +51,16 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
     >
       <Icon className="w-4 h-4 flex-shrink-0 mt-0.5" />
       <span className="flex-1 leading-snug">{toast.message}</span>
+      {toast.action && (
+        <button
+          onClick={handleAction}
+          className="flex-shrink-0 text-xs font-semibold underline underline-offset-2 hover:opacity-80 transition-opacity"
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button
-        onClick={() => onRemove(toast.id)}
+        onClick={() => onRemove(toast.id, { skipTimeout: false })}
         className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
       >
         <X className="w-3.5 h-3.5" />
@@ -50,20 +74,35 @@ export default function ToastContainer() {
 
   useEffect(() => {
     const unsub1 = onToast((t) => setToasts((prev) => [...prev, t]))
-    const unsub2 = onDismiss((id) => setToasts((prev) => prev.filter((t) => t.id !== id)))
-    return () => { unsub1(); unsub2() }
+    const unsub2 = onDismiss((id) =>
+      setToasts((prev) => prev.filter((t) => t.id !== id)),
+    )
+    return () => {
+      unsub1()
+      unsub2()
+    }
   }, [])
+
+  function handleRemove(id: string, opts: { skipTimeout?: boolean }) {
+    setToasts((prev) => {
+      const found = prev.find((t) => t.id === id)
+      if (found && !opts.skipTimeout) {
+        try {
+          found.onTimeout?.()
+        } catch {
+          /* swallow */
+        }
+      }
+      return prev.filter((t) => t.id !== id)
+    })
+  }
 
   if (toasts.length === 0) return null
 
   return (
     <div className="fixed bottom-16 right-4 z-[200] flex flex-col gap-2 items-end">
       {toasts.map((t) => (
-        <ToastItem
-          key={t.id}
-          toast={t}
-          onRemove={(id) => setToasts((prev) => prev.filter((x) => x.id !== id))}
-        />
+        <ToastItem key={t.id} toast={t} onRemove={handleRemove} />
       ))}
     </div>
   )

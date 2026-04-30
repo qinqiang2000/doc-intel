@@ -14,9 +14,12 @@ vi.mock("react-router-dom", async () => {
 });
 
 const refreshMeMock = vi.fn();
-let mockState: any;
+let mockState: {
+  workspaces: Array<{ id: string; name: string; slug: string; role: "owner" | "member" }>;
+  refreshMe: ReturnType<typeof vi.fn>;
+};
 vi.mock("../../stores/auth-store", () => ({
-  useAuthStore: (selector: (s: any) => unknown) => selector(mockState),
+  useAuthStore: (selector: (s: unknown) => unknown) => selector(mockState),
 }));
 
 import WorkspaceSettingsPage from "../WorkspaceSettingsPage";
@@ -71,7 +74,7 @@ describe("WorkspaceSettingsPage", () => {
       { id: "ws-1", name: "Demo", slug: "demo", role: "member" as const },
     ];
     renderPage();
-    expect(screen.getByText(/只有 owner 可以访问/)).toBeInTheDocument();
+    expect(screen.getByText(/Only owners can access/i)).toBeInTheDocument();
   });
 
   it("loads and displays members for the owner", async () => {
@@ -94,7 +97,7 @@ describe("WorkspaceSettingsPage", () => {
     await screen.findByText("Bob");
 
     await user.type(screen.getByPlaceholderText(/email@/i), "new@x.com");
-    await user.click(screen.getByRole("button", { name: /邀请/ }));
+    await user.click(screen.getByRole("button", { name: /^Invite$/i }));
 
     await waitFor(() => {
       expect(mockAdapter.history.post.length).toBe(1);
@@ -111,7 +114,7 @@ describe("WorkspaceSettingsPage", () => {
     renderPage();
     await screen.findByText("Bob");
 
-    await user.click(screen.getByRole("button", { name: /删除 Workspace/ }));
+    await user.click(screen.getByRole("button", { name: /Delete workspace/i }));
 
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith("/dashboard");

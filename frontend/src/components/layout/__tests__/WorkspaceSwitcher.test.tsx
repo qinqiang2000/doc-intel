@@ -22,7 +22,7 @@ const storeState = {
 };
 
 vi.mock("../../../stores/auth-store", () => ({
-  useAuthStore: (selector: (s: any) => unknown) => selector(storeState),
+  useAuthStore: (selector: (s: unknown) => unknown) => selector(storeState),
 }));
 
 import WorkspaceSwitcher from "../WorkspaceSwitcher";
@@ -81,7 +81,7 @@ describe("WorkspaceSwitcher", () => {
     renderSwitcher();
 
     await user.click(screen.getByRole("button", { name: /Demo/ }));
-    await user.click(screen.getByText(/新建/));
+    await user.click(screen.getByText(/New workspace/i));
 
     expect(navigateMock).toHaveBeenCalledWith("/workspaces/new");
   });
