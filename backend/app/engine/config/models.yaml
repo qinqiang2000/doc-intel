@@ -22,16 +22,25 @@ processors:
       model_override: "GEMINI_MODEL"        # 可通过环境变量覆盖默认模型
       temperature: "GEMINI_TEMPERATURE"     # 温度参数
       max_output_tokens: "GEMINI_MAX_OUTPUT_TOKENS"
+      thinking_budget: "GEMINI_THINKING_BUDGET"   # gemini-2.x：整数 token 预算
+      thinking_level: "GEMINI_THINKING_LEVEL"     # gemini-3+：LOW / MEDIUM / HIGH
 
     # 支持的模型列表
+    # 每个 model 可声明 params 块作为该模型的默认调参基线
+    # 优先级：runtime_config > env vars > model.params > processor 内部默认值
     models:
       gemini-2.5-flash:
         name: "gemini-2.5-flash"
         description: "Gemini-2.5-Flash(tested, recommended)"
+        params:
+          thinking_budget: 0   # 关闭 thinking，保持当前行为
 
       gemini-3-flash-preview:
         name: "gemini-3-flash-preview"
-        description: "Points to gemini-3-flash-preview"
+        description: "Gemini-3-Flash preview；thinking 用 thinking_level (LOW/MEDIUM/HIGH)"
+        params:
+          thinking_level: "HIGH"
+          temperature: 0.0
 
   # OpenAI 处理器
   openai:

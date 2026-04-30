@@ -8,7 +8,7 @@ import yaml
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ class ModelConfig:
     """模型配置数据类"""
     name: str
     description: str
+    params: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -91,7 +92,8 @@ class ConfigManager:
             for model_name, model_data in processor_data.get('models', {}).items():
                 models[model_name] = ModelConfig(
                     name=model_data['name'],
-                    description=model_data['description']
+                    description=model_data['description'],
+                    params=dict(model_data.get('params') or {}),
                 )
 
             parsed_config['processors'][processor_type] = ProcessorConfig(

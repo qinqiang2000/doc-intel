@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional, Union
 
 from openai import AsyncOpenAI
 
+from app.engine.config.manager import config_manager
 from app.engine.processors.base import DocumentProcessor
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,12 @@ class OpenAIDocumentProcessor(DocumentProcessor):
         """
         self.model_name = model_name
         self.client = None
+
+        # YAML model.params 作为最低优先级基线（runtime_config 覆盖之）
+        model_cfg = config_manager.get_model_config("openai", model_name)
+        self._yaml_params: Dict[str, Any] = (
+            dict(model_cfg.params) if model_cfg and model_cfg.params else {}
+        )
 
         try:
             api_key = os.environ.get("OPENAI_API_KEY")
@@ -215,9 +222,11 @@ class OpenAIDocumentProcessor(DocumentProcessor):
         logger.info(f"Processing document with OpenAI {self.model_name}: {file_path}")
 
         try:
-            temperature = runtime_config.get("temperature", 0.1) if runtime_config else 0.1
-            max_tokens = runtime_config.get("max_output_tokens", 4096) if runtime_config else 4096
-            response_schema = runtime_config.get("response_schema") if runtime_config else None
+            # 合并优先级：runtime_config > YAML model.params > 内置默认
+            effective = {**self._yaml_params, **(runtime_config or {})}
+            temperature = effective.get("temperature", 0.1)
+            max_tokens = effective.get("max_output_tokens", 4096)
+            response_schema = effective.get("response_schema")
 
             content, use_instructions_api = await self._prepare_message_content(
                 file_path, instruction

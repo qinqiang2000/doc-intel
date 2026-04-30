@@ -10,6 +10,7 @@ from typing import Any, List, Optional
 import httpx
 from pydantic import BaseModel, Field
 
+from app.engine.config.manager import config_manager
 from app.engine.processors.base import DocumentProcessor
 from app.engine.processors.piaozone_token import get_piaozone_token
 from app.engine.utils import extract_json
@@ -65,8 +66,16 @@ class PiaoZoneProcessor(DocumentProcessor):
 
         logger.info(f"Initialized PiaoZone processor with model: {model_name}")
 
+    def _load_yaml_params(self) -> dict:
+        """从 models.yaml 中加载当前 model 的默认 params 块。"""
+        model_cfg = config_manager.get_model_config("piaozone", self.model_name)
+        if model_cfg and model_cfg.params:
+            return dict(model_cfg.params)
+        return {}
+
     def _build_param_config(self, custom_config: dict) -> dict:
-        """从环境变量和自定义配置构建 LLM 参数配置"""
+        """合并 YAML model.params → env vars → custom_config。"""
+        yaml_params = self._load_yaml_params()
         env_config = {}
 
         if os.environ.get("PIAOZONE_TEMPERATURE"):
@@ -90,7 +99,7 @@ class PiaoZoneProcessor(DocumentProcessor):
         if os.environ.get("PIAOZONE_THINKING_BUDGET"):
             env_config["thinking_budget"] = int(os.environ.get("PIAOZONE_THINKING_BUDGET"))
 
-        final_config = {**env_config, **custom_config}
+        final_config = {**yaml_params, **env_config, **(custom_config or {})}
         logger.debug(f"Built PiaoZone param config: {final_config}")
         return final_config
 

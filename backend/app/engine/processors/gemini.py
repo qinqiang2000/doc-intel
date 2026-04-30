@@ -9,6 +9,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
+from app.engine.config.manager import config_manager
 from app.engine.processors.base import DocumentProcessor
 from app.engine.utils import extract_json
 
@@ -65,8 +66,8 @@ class GeminiLMModelParams(BaseModel):
         description="响应的请求模态。",
     )
     thinking_config: Optional[Any] = Field(
-        default=types.ThinkingConfig(thinking_budget=0),
-        description="深度思考配置",
+        default=None,
+        description="深度思考配置（由 _normalize_thinking 从 thinking_budget/thinking_level 翻译得到）",
     )
 
 
@@ -79,9 +80,16 @@ class GeminiProcessor(DocumentProcessor):
         # 从环境变量构建 LLM 配置，使用默认值
         self.llm_param_config = self._build_param_config({})
 
-    def _build_param_config(self, custom_config: dict) -> dict:
-        """从环境变量和自定义配置构建 LLM 参数配置"""
-        env_config = {}
+    def _load_yaml_params(self) -> dict:
+        """从 models.yaml 中加载当前 model 的默认 params 块。"""
+        model_cfg = config_manager.get_model_config("gemini", self.model_name)
+        if model_cfg and model_cfg.params:
+            return dict(model_cfg.params)
+        return {}
+
+    def _load_env_params(self) -> dict:
+        """从环境变量读取 Gemini 调参（保持向后兼容）。"""
+        env_config: dict = {}
 
         if os.environ.get("GEMINI_TEMPERATURE"):
             env_config["temperature"] = float(os.environ.get("GEMINI_TEMPERATURE"))
@@ -114,12 +122,40 @@ class GeminiProcessor(DocumentProcessor):
             env_config["response_mime_type"] = os.environ.get("GEMINI_RESPONSE_MIME_TYPE")
 
         if os.environ.get("GEMINI_THINKING_BUDGET"):
-            thinking_budget = int(os.environ.get("GEMINI_THINKING_BUDGET"))
-            env_config["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking_budget)
+            env_config["thinking_budget"] = int(os.environ.get("GEMINI_THINKING_BUDGET"))
 
-        final_config = {**env_config, **custom_config}
-        logger.debug(f"Built Gemini param config: {final_config}")
-        return final_config
+        if os.environ.get("GEMINI_THINKING_LEVEL"):
+            env_config["thinking_level"] = os.environ.get("GEMINI_THINKING_LEVEL")
+
+        return env_config
+
+    def _normalize_thinking(self, cfg: dict) -> dict:
+        """将 thinking_budget / thinking_level 收口转成 ThinkingConfig。
+
+        thinking_level（gemini-3+）与 thinking_budget（gemini-2.x）二选一；
+        若同时存在，thinking_level 胜出并 log warning。
+        """
+        level = cfg.pop("thinking_level", None)
+        budget = cfg.pop("thinking_budget", None)
+        if level is not None and budget is not None:
+            logger.warning(
+                "Both thinking_level=%r and thinking_budget=%r set; preferring thinking_level.",
+                level, budget,
+            )
+        if level is not None:
+            cfg["thinking_config"] = types.ThinkingConfig(thinking_level=str(level).upper())
+        elif budget is not None:
+            cfg["thinking_config"] = types.ThinkingConfig(thinking_budget=int(budget))
+        return cfg
+
+    def _build_param_config(self, custom_config: dict) -> dict:
+        """合并 YAML model.params → env vars → custom_config，再 normalize thinking。"""
+        yaml_params = self._load_yaml_params()
+        env_config = self._load_env_params()
+        merged = {**yaml_params, **env_config, **(custom_config or {})}
+        merged = self._normalize_thinking(merged)
+        logger.debug(f"Built Gemini param config: {merged}")
+        return merged
 
     def _normalize_schema(self, schema):
         """
@@ -185,19 +221,11 @@ class GeminiProcessor(DocumentProcessor):
             )
         ]
 
-        # 合并运行时配置：runtime_config > 默认配置
+        # 合并运行时配置：runtime_config > 缓存的 llm_param_config（已含 YAML+env）
         merged_config = {**self.llm_param_config}
         if runtime_config:
-            # Handle thinking_budget from Label Studio - convert to thinking_config
-            if "thinking_budget" in runtime_config:
-                thinking_budget = runtime_config.pop("thinking_budget")
-                if isinstance(thinking_budget, int) and thinking_budget > 0:
-                    merged_config["thinking_config"] = types.ThinkingConfig(
-                        thinking_budget=thinking_budget
-                    )
-                    logger.info(f"Converted thinking_budget {thinking_budget} to ThinkingConfig")
-
             merged_config.update(runtime_config)
+            merged_config = self._normalize_thinking(merged_config)
             logger.debug(f"Applied runtime config: {runtime_config}")
 
         # 标准化 response_schema 格式（修复大写类型名称问题）

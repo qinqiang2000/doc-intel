@@ -159,6 +159,57 @@ async def test_piaozone_processor_uses_httpx_async(monkeypatch, tmp_path):
     assert len(posts) >= 1
 
 
+# ─── YAML per-model params (Gemini) ───────────────────────────────────────────
+
+def _clean_gemini_env(monkeypatch):
+    monkeypatch.setenv("API_KEY", "fake-key")
+    for k in [
+        "GEMINI_THINKING_BUDGET",
+        "GEMINI_THINKING_LEVEL",
+        "GEMINI_TEMPERATURE",
+        "GEMINI_MODEL",
+    ]:
+        monkeypatch.delenv(k, raising=False)
+
+
+def test_gemini_yaml_params_baseline(monkeypatch):
+    """YAML 中声明的 params 应进入 self.llm_param_config，
+    且 thinking_budget/thinking_level 被翻译成 ThinkingConfig。"""
+    _clean_gemini_env(monkeypatch)
+
+    fake_client = MagicMock()
+    with patch("app.engine.processors.gemini.genai.Client", return_value=fake_client):
+        from app.engine.processors.gemini import GeminiProcessor
+
+        p3 = GeminiProcessor(model_name="gemini-3-flash-preview")
+        tc3 = p3.llm_param_config.get("thinking_config")
+        assert tc3 is not None
+        assert getattr(tc3, "thinking_level", None) is not None
+        # gemini-3 YAML 还声明了 temperature: 0.0
+        assert p3.llm_param_config.get("temperature") == 0.0
+
+        p25 = GeminiProcessor(model_name="gemini-2.5-flash")
+        tc25 = p25.llm_param_config.get("thinking_config")
+        assert tc25 is not None
+        # YAML 里写了 thinking_budget: 0
+        assert getattr(tc25, "thinking_budget", None) == 0
+
+
+def test_gemini_env_overrides_yaml(monkeypatch):
+    """env vars 优先级高于 YAML model.params。"""
+    _clean_gemini_env(monkeypatch)
+    monkeypatch.setenv("GEMINI_THINKING_LEVEL", "LOW")
+
+    fake_client = MagicMock()
+    with patch("app.engine.processors.gemini.genai.Client", return_value=fake_client):
+        from app.engine.processors.gemini import GeminiProcessor
+
+        p = GeminiProcessor(model_name="gemini-3-flash-preview")
+        tc = p.llm_param_config["thinking_config"]
+        # env LOW 覆盖 YAML HIGH
+        assert getattr(tc, "thinking_level").value == "LOW"
+
+
 # ─── Factory registration ─────────────────────────────────────────────────────
 
 def test_factory_registers_real_processors_when_sdks_available():
