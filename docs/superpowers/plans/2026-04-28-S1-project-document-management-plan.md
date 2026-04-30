@@ -4314,7 +4314,7 @@ Boot servers:
 ```bash
 # Terminal A
 cd /Users/qinqiang02/colab/codespace/ai/doc-intel/backend
-uv run uvicorn app.main:app --port 8000
+uv run uvicorn app.main:app --port 9000
 
 # Terminal B
 cd /Users/qinqiang02/colab/codespace/ai/doc-intel/frontend

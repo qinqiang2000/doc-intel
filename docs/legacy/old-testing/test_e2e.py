@@ -11,7 +11,7 @@ ApiAnything E2E 测试脚本 (T6.4)
   6. CRUD 标注
 
 用法:
-  python testing/test_e2e.py [--base-url http://localhost:8000]
+  python testing/test_e2e.py [--base-url http://localhost:9000]
 
 前提:
   - 后端已运行 (uvicorn app.main:app --reload)
@@ -48,7 +48,7 @@ def head(msg: str) -> None: print(f"\n{BOLD}{CYAN}{msg}{RESET}")
 
 # ── HTTP helpers ──────────────────────────────────────────────────────────────
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:9000"
 
 def get(path: str, headers: dict | None = None) -> dict:
     req = urllib.request.Request(f"{BASE_URL}{path}", headers=headers or {})
@@ -313,7 +313,7 @@ def main() -> None:
     global BASE_URL
 
     parser = argparse.ArgumentParser(description="ApiAnything E2E test")
-    parser.add_argument("--base-url", default="http://localhost:8000")
+    parser.add_argument("--base-url", default="http://localhost:9000")
     parser.add_argument("--no-cleanup", action="store_true", help="Keep test data after run")
     args = parser.parse_args()
     BASE_URL = args.base_url.rstrip("/")

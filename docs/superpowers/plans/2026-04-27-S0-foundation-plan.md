@@ -2804,7 +2804,7 @@ Replace `<repo>/frontend/src/lib/api-client.ts` with:
 import axios, { AxiosError, AxiosInstance } from "axios";
 import { clearToken, getToken } from "./auth-storage";
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8000";
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:9000";
 
 export const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -3880,9 +3880,9 @@ git commit -m "S0/Task 17: Dashboard, WorkspaceCreate, WorkspaceSettings pages
 Run in terminal A:
 ```bash
 cd <repo>/backend
-uv run uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 9000
 ```
-Expected: `Uvicorn running on http://0.0.0.0:8000`. Leave running.
+Expected: `Uvicorn running on http://0.0.0.0:9000`. Leave running.
 
 - [ ] **Step 2: Boot frontend**
 
@@ -3897,7 +3897,7 @@ Expected: `Local: http://localhost:5173/`. Leave running.
 
 Run:
 ```bash
-curl -s http://localhost:8000/health
+curl -s http://localhost:9000/health
 ```
 Expected: `{"status":"ok","version":"0.1.0"}`
 
@@ -3920,12 +3920,12 @@ Open http://localhost:5173 in a browser. Walk through these steps. Each must suc
 
 In terminal C, register a new user via curl and call ml/health:
 ```bash
-TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/register \
+TOKEN=$(curl -s -X POST http://localhost:9000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"smoke@example.com","password":"secret123","display_name":"Smoke"}' \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['token'])")
 
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/ml/health
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:9000/api/v1/ml/health
 ```
 Expected (when ML backend is up): `{"ml_status":"ok","ml_version":"...","ml_url":"http://0.0.0.0:9090"}`. If ML backend is down: `{"error":{"code":"ml_backend_unavailable","message":"..."}}` (HTTP 503).
 

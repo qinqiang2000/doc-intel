@@ -2966,7 +2966,7 @@ export const usePredictStore = create<PredictState>((set, get) => ({
       batchProgress: { total: documentIds.length, events: [], done: false, succeeded: 0, failed: 0 },
     });
     const token = getToken();
-    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8000";
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:9000";
     const url = `${baseUrl}/api/v1/projects/${projectId}/batch-predict`;
     const body = JSON.stringify({
       document_ids: documentIds,
@@ -3580,7 +3580,7 @@ export default function PredictModal({
         <div className="flex-1 overflow-auto p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="text-center">
             <img
-              src={`${(import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8000"}/api/v1/projects/${projectId}/documents/${documentId}/preview`}
+              src={`${(import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:9000"}/api/v1/projects/${projectId}/documents/${documentId}/preview`}
               alt={filename}
               className="max-w-full mx-auto border border-[#2a2e3d]"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -4050,7 +4050,7 @@ This task is the orchestrator's job (Playwright + curl + sqlite3). The orchestra
 cd /Users/qinqiang02/colab/codespace/ai/doc-intel/backend
 rm -f data/doc_intel.db data/doc_intel.db-shm data/doc_intel.db-wal
 uv run alembic upgrade head
-uv run uvicorn app.main:app --port 8000 &
+uv run uvicorn app.main:app --port 9000 &
 cd ../frontend
 npm run dev &
 ```
@@ -4076,7 +4076,7 @@ Use Playwright + curl to drive:
 - [ ] **Step 3: Stop servers**
 
 ```bash
-lsof -ti :8000 | xargs kill 2>/dev/null
+lsof -ti :9000 | xargs kill 2>/dev/null
 pkill -f vite 2>/dev/null
 ```
 

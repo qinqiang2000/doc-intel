@@ -76,7 +76,7 @@ npm run dev
 
 # 或分别启动
 cd backend && uv run alembic upgrade head
-cd backend && uv run uvicorn app.main:app --reload --port 8000
+cd backend && uv run uvicorn app.main:app --reload --port 9000
 
 cd frontend && npm run dev   # http://localhost:5173
 ```
@@ -86,7 +86,7 @@ cd frontend && npm run dev   # http://localhost:5173
 健康检查：
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:9000/health
 # {"status":"ok","version":"0.1.0"}
 ```
 
@@ -153,7 +153,7 @@ doc-intel/
 
 ## API 概览
 
-后端在 `/api/v1` 下，OpenAPI doc 见 http://localhost:8000/docs。
+后端在 `/api/v1` 下，OpenAPI doc 见 http://localhost:9000/docs。
 
 ### 认证（不需 token）
 
@@ -245,7 +245,7 @@ POST   /extract/{api_code}
 
 ```bash
 # 注册
-curl -X POST http://localhost:8000/api/v1/auth/register \
+curl -X POST http://localhost:9000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"alice@example.com","password":"Pass1234!","workspace_name":"Acme"}' \
   | jq .access_token | tr -d '"' > /tmp/token
@@ -253,27 +253,27 @@ curl -X POST http://localhost:8000/api/v1/auth/register \
 TOKEN=$(cat /tmp/token)
 
 # 创建 Project
-PID=$(curl -s -X POST http://localhost:8000/api/v1/workspaces/<wid>/projects \
+PID=$(curl -s -X POST http://localhost:9000/api/v1/workspaces/<wid>/projects \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"name":"Receipts","template_key":"china_vat"}' | jq -r .id)
 
 # 上传 + 提取
-DID=$(curl -s -X POST http://localhost:8000/api/v1/projects/$PID/documents \
+DID=$(curl -s -X POST http://localhost:9000/api/v1/projects/$PID/documents \
   -H "Authorization: Bearer $TOKEN" -F "file=@invoice.pdf" | jq -r .id)
-curl -X POST http://localhost:8000/api/v1/projects/$PID/predict \
+curl -X POST http://localhost:9000/api/v1/projects/$PID/predict \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d "{\"document_id\":\"$DID\"}"
 
 # 发布 + 拿 key
-curl -X POST http://localhost:8000/api/v1/projects/$PID/publish \
+curl -X POST http://localhost:9000/api/v1/projects/$PID/publish \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"api_code":"receipts"}'
-KEY=$(curl -s -X POST http://localhost:8000/api/v1/projects/$PID/api-keys \
+KEY=$(curl -s -X POST http://localhost:9000/api/v1/projects/$PID/api-keys \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"name":"prod"}' | jq -r .key)
 
 # 公开调用
-curl -X POST http://localhost:8000/extract/receipts \
+curl -X POST http://localhost:9000/extract/receipts \
   -H "X-Api-Key: $KEY" -F "file=@invoice.pdf"
 ```
 

@@ -455,7 +455,7 @@ Real Gemini, alpha.pdf already in a project:
 4. Copy the full key from modal → click Done → modal closes; list shows prefix
 5. cURL with the key:
    ```bash
-   curl -X POST "http://127.0.0.1:8000/extract/receipts" \
+   curl -X POST "http://127.0.0.1:9000/extract/receipts" \
      -H "X-Api-Key: dik_..." \
      -F "file=@alpha.pdf"
    ```

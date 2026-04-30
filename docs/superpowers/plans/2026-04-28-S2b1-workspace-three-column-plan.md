@@ -1794,7 +1794,7 @@ interface DocDetail extends DocBrief {
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "http://localhost:8000";
+  "http://localhost:9000";
 
 export default function WorkspacePage() {
   const { slug, pid } = useParams();
@@ -2054,7 +2054,7 @@ cd /Users/qinqiang02/colab/codespace/ai/doc-intel/backend
 rm -f data/doc_intel.db data/doc_intel.db-shm data/doc_intel.db-wal
 uv run alembic upgrade head
 API_KEY="<from /Users/qinqiang02/colab/codespace/ai/label-studio-ml-backend/invoice_extractor/.env>" \
-  uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+  uv run uvicorn app.main:app --host 127.0.0.1 --port 9000 &
 
 cd ../frontend
 npm run dev &
@@ -2093,7 +2093,7 @@ npm run build 2>&1 | tail -5
 - [ ] **Step 4: Stop servers + tag**
 
 ```bash
-lsof -ti :8000 | xargs kill 2>/dev/null
+lsof -ti :9000 | xargs kill 2>/dev/null
 pkill -f vite 2>/dev/null
 
 cd /Users/qinqiang02/colab/codespace/ai/doc-intel

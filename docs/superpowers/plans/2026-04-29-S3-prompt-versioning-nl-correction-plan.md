@@ -3356,7 +3356,7 @@ Or run components separately as in S2b1/S2b2.
 - [ ] **Step 2: Bootstrap test data via curl**
 
 ```bash
-BASE=http://127.0.0.1:8000/api/v1
+BASE=http://127.0.0.1:9000/api/v1
 TOKEN=$(curl -s --noproxy '*' -X POST $BASE/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"alice@example.com","password":"pass1234","display_name":"Alice"}' \
@@ -3411,7 +3411,7 @@ npm run build 2>&1 | tail -5
 - [ ] **Step 5: Stop servers + tag**
 
 ```bash
-lsof -ti :8000 :5173 2>/dev/null | sort -u | xargs -r kill 2>/dev/null
+lsof -ti :9000 :5173 2>/dev/null | sort -u | xargs -r kill 2>/dev/null
 pkill -f vite 2>/dev/null
 
 cd /Users/qinqiang02/colab/codespace/ai/doc-intel

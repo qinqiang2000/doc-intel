@@ -2,7 +2,7 @@
 
 > 验收范围：8 个 sub-spec（S0 / S1 / S2a / S2b1 / S2b2 / S3 / S4 / S5）串联。
 > 验收时间：约 30 分钟（含 LLM 等待）。
-> 前置：本机有 SOCKS 代理可访问 Google Gemini / OpenAI；已发放真实 API key；端口 8000 / 5173 空闲。
+> 前置：本机有 SOCKS 代理可访问 Google Gemini / OpenAI；已发放真实 API key；端口 9000 / 5173 空闲。
 
 ---
 
@@ -39,7 +39,7 @@ alembic upgrade head
 # T1 — 后端
 cd /Users/qinqiang02/colab/codespace/ai/doc-intel/backend
 source .venv/bin/activate
-uvicorn app.main:app --port 8000 --reload
+uvicorn app.main:app --port 9000 --reload
 
 # T2 — 前端
 cd /Users/qinqiang02/colab/codespace/ai/doc-intel/frontend
@@ -48,7 +48,7 @@ pnpm dev   # 或 npm run dev，跑在 5173
 
 健康检查：
 ```bash
-curl -s http://localhost:8000/api/v1/health   # → {"status":"ok"}
+curl -s http://localhost:9000/api/v1/health   # → {"status":"ok"}
 ```
 
 ### 0.4 准备样本文件
@@ -262,7 +262,7 @@ curl -s http://localhost:8000/api/v1/health   # → {"status":"ok"}
 KEY="dik_xxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"   # 上一步复制的
 PDF=/Users/qinqiang02/colab/codespace/ai/demo-invoice-ai/Source.gv.pdf
 
-curl -sS -X POST http://localhost:8000/extract/receipts \
+curl -sS -X POST http://localhost:9000/extract/receipts \
   -H "X-Api-Key: $KEY" \
   -F "file=@$PDF" | python3 -m json.tool
 ```
@@ -293,24 +293,24 @@ curl -sS -X POST http://localhost:8000/extract/receipts \
 
 ```bash
 # 1. 缺 X-Api-Key → 401
-curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8000/extract/receipts -F "file=@$PDF"
+curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://localhost:9000/extract/receipts -F "file=@$PDF"
 # 期望: 401
 
 # 2. 错误 key → 401
-curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8000/extract/receipts \
+curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://localhost:9000/extract/receipts \
   -H "X-Api-Key: dik_wrong" -F "file=@$PDF"
 # 期望: 401
 
 # 3. unknown api_code → 404
-curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8000/extract/nonexistent \
+curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://localhost:9000/extract/nonexistent \
   -H "X-Api-Key: $KEY" -F "file=@$PDF"
 # 期望: 404
 
 # 4. unpublish 后 → 403
 TOKEN=...   # 从浏览器 localStorage 复制 access_token
 PID=...     # 从 URL 复制
-curl -sS -X POST http://localhost:8000/api/v1/projects/$PID/unpublish -H "Authorization: Bearer $TOKEN"
-curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8000/extract/receipts \
+curl -sS -X POST http://localhost:9000/api/v1/projects/$PID/unpublish -H "Authorization: Bearer $TOKEN"
+curl -sS -o /dev/null -w "%{http_code}\n" -X POST http://localhost:9000/extract/receipts \
   -H "X-Api-Key: $KEY" -F "file=@$PDF"
 # 期望: 403
 ```
