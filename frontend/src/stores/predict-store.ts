@@ -251,7 +251,7 @@ export const usePredictStore = create<PredictState>((set, get) => ({
       batchProgress: { total: documentIds.length, events: [], done: false, succeeded: 0, failed: 0 },
     });
     const token = getToken();
-    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8000";
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:9000";
     const url = `${baseUrl}/api/v1/projects/${projectId}/batch-predict`;
     const body = JSON.stringify({
       document_ids: documentIds,
@@ -358,7 +358,7 @@ export const usePredictStore = create<PredictState>((set, get) => ({
       },
     });
     try {
-      const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8000";
+      const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:9000";
       const url = `${baseUrl}/api/v1/projects/${projectId}/documents/${documentId}/correct`;
       const { streamSse } = await import("../lib/sse");
       const headers: Record<string, string> = { "Content-Type": "application/json" };

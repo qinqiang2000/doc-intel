@@ -24,7 +24,7 @@ function deriveStatus(p: ProjectApiState | null): Status {
 }
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)
-  ?? "http://localhost:8000";
+  ?? "http://localhost:9000";
 
 export default function PublishPage() {
   const { slug, pid } = useParams();
