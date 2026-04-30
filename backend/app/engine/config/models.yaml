@@ -14,7 +14,7 @@ processors:
     name: "Google Gemini"
     description: "Google's Gemini AI models for document understanding"
     enabled: true
-    default_model: "gemini-2.5-flash"
+    default_model: "gemini-3-flash-preview"
 
     # 环境变量映射
     env_vars:

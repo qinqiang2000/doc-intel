@@ -74,7 +74,7 @@ class GeminiLMModelParams(BaseModel):
 class GeminiProcessor(DocumentProcessor):
     """Gemini-based document processor"""
 
-    def __init__(self, model_name: str = "gemini-2.5-flash-preview-04-17"):
+    def __init__(self, model_name: str = "gemini-3-flash-preview"):
         self.client = genai.Client(api_key=os.environ.get("API_KEY"))
         self.model_name = model_name
         # 从环境变量构建 LLM 配置，使用默认值
