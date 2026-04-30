@@ -266,53 +266,69 @@ export default function ProjectDocumentsPage() {
             </tr>
           </thead>
           <tbody>
-            {docs.items.map((d) => (
-              <tr key={d.id} className="border-b border-[#1a1d27]">
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selected.has(d.id)}
-                    onChange={() => toggleSelect(d.id)}
-                  />
-                </td>
-                <td className="py-2">{d.filename}</td>
-                <td>{(d.file_size / 1024).toFixed(1)} KB</td>
-                <td className="text-[#94a3b8]">{d.mime_type}</td>
-                <td>{d.status}</td>
-                <td>
-                  {d.is_ground_truth ? (
-                    <span className="text-[#22c55e] text-xs">● GT</span>
-                  ) : (
-                    <span className="text-[#64748b] text-xs">—</span>
-                  )}
-                </td>
-                <td className="text-right">
-                  <button
-                    type="button"
-                    onClick={() => ws && navigate(
-                      `/workspaces/${ws.slug}/projects/${pid}/workspace?doc=${d.id}`
+            {docs.items.map((d) => {
+              const openWorkspace = () => {
+                if (ws) {
+                  navigate(
+                    `/workspaces/${ws.slug}/projects/${pid}/workspace?doc=${d.id}`
+                  );
+                }
+              };
+              const stop = (e: React.MouseEvent | React.ChangeEvent) =>
+                e.stopPropagation();
+              return (
+                <tr
+                  key={d.id}
+                  onClick={openWorkspace}
+                  className="border-b border-[#1a1d27] cursor-pointer hover:bg-[#1a1d27] transition-colors"
+                >
+                  <td onClick={stop}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(d.id)}
+                      onChange={(e) => {
+                        stop(e);
+                        toggleSelect(d.id);
+                      }}
+                    />
+                  </td>
+                  <td className="py-2">{d.filename}</td>
+                  <td>{(d.file_size / 1024).toFixed(1)} KB</td>
+                  <td className="text-[#94a3b8]">{d.mime_type}</td>
+                  <td>{d.status}</td>
+                  <td>
+                    {d.is_ground_truth ? (
+                      <span className="text-[#22c55e] text-xs">● GT</span>
+                    ) : (
+                      <span className="text-[#64748b] text-xs">—</span>
                     )}
-                    className="text-xs text-[#6366f1] hover:underline mr-3"
-                  >
-                    工作台
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void toggleGT(d)}
-                    className="text-xs text-[#94a3b8] hover:text-[#e2e8f0] mr-3"
-                  >
-                    {d.is_ground_truth ? "取消 GT" : "标记为 GT"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void onDelete(d)}
-                    className="text-xs text-[#ef4444] hover:underline"
-                  >
-                    删除
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="text-right" onClick={stop}>
+                    <button
+                      type="button"
+                      onClick={openWorkspace}
+                      className="text-xs text-[#6366f1] hover:underline mr-3"
+                    >
+                      工作台
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void toggleGT(d)}
+                      className="text-xs text-[#94a3b8] hover:text-[#e2e8f0] mr-3"
+                    >
+                      {d.is_ground_truth ? "取消 GT" : "标记为 GT"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void onDelete(d)}
+                      className="text-xs text-[#ef4444] hover:underline"
+                    >
+                      删除
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

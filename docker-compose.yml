@@ -34,9 +34,10 @@ services:
       SECRET_KEY: "CHANGE-ME-IN-PRODUCTION-USE-A-REAL-SECRET"
       UPLOAD_DIR: /app/data/uploads
       DEFAULT_PROCESSOR: mock
-      # Uncomment and set API keys as needed:
-      # GEMINI_API_KEY: ""
-      # OPENAI_API_KEY: ""
+      # API keys for LLM processors (read from host env)
+      # Gemini env var is API_KEY (matches gemini.py / models.yaml)
+      API_KEY: "${API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000"]'
     volumes:
       - uploads_data:/app/data/uploads
