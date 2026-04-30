@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:9000',
       '/static': 'http://localhost:9000',
+      '/extract': 'http://localhost:9000',
     },
   },
 })

@@ -23,9 +23,6 @@ function deriveStatus(p: ProjectApiState | null): Status {
   return "published";
 }
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)
-  ?? "http://localhost:9000";
-
 export default function PublishPage() {
   const { slug, pid } = useParams();
   const navigate = useNavigate();
@@ -121,7 +118,7 @@ export default function PublishPage() {
   }
 
   const publicUrl = project?.api_code
-    ? `${API_BASE}/extract/${project.api_code}`
+    ? `${window.location.origin}/extract/${project.api_code}`
     : "";
 
   return (

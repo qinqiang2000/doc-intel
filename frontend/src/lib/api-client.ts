@@ -1,12 +1,7 @@
 import axios, { AxiosError, type AxiosInstance } from "axios";
 import { clearToken, getToken } from "./auth-storage";
 
-const BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  "http://localhost:9000";
-
 export const api: AxiosInstance = axios.create({
-  baseURL: BASE_URL,
   timeout: 30_000,
 });
 
