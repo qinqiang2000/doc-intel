@@ -6,6 +6,7 @@ import BboxOverlay from "../components/workspace/BboxOverlay";
 import DocumentCanvas from "../components/workspace/DocumentCanvas";
 import JsonPreview from "../components/workspace/JsonPreview";
 import StepIndicator from "../components/workspace/StepIndicator";
+import ResultTabs from "../components/workspace/ResultTabs";
 import WorkspaceToolbar from "../components/workspace/WorkspaceToolbar";
 import PromptHistoryPanel from "../components/workspace/PromptHistoryPanel";
 import NLCorrectionConsole from "../components/workspace/NLCorrectionConsole";
@@ -42,6 +43,7 @@ export default function WorkspacePage() {
   const currentStep = usePredictStore((s) => s.currentStep);
   const setStep = usePredictStore((s) => s.setStep);
   const predictSingle = usePredictStore((s) => s.predictSingle);
+  const loadResults = usePredictStore((s) => s.loadResults);
   const loadAnnotations = usePredictStore((s) => s.loadAnnotations);
   const patchAnnotation = usePredictStore((s) => s.patchAnnotation);
   const deleteAnnotation = usePredictStore((s) => s.deleteAnnotation);
@@ -103,26 +105,22 @@ export default function WorkspacePage() {
     };
   }, [pid, docId]);
 
-  // 3) Annotations + auto-predict
+  // 3) Load existing results + annotations. NEVER auto-predict — user must
+  // click "Run prediction" / Re-predict explicitly (mirrors label-studio's
+  // default `evaluate_predictions_automatically=False`).
   useEffect(() => {
     if (!pid || !docId) return;
     let cancelled = false;
-    async function reloadAnns() {
-      if (!docId) return;
+    void (async () => {
+      try {
+        await loadResults(pid, docId);
+      } catch (e) {
+        if (!cancelled) setError((e as { message?: string })?.message ?? "Load failed");
+      }
       try {
         const arr = await loadAnnotations(docId);
         if (!cancelled) setAnnotations(arr);
       } catch { /* non-fatal */ }
-    }
-    void (async () => {
-      if (!result) {
-        try {
-          await predictSingle(pid, docId);
-        } catch (e) {
-          if (!cancelled) setError((e as { message?: string })?.message ?? "Predict failed");
-        }
-      }
-      await reloadAnns();
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -222,6 +220,15 @@ export default function WorkspacePage() {
         onSwitch={onSwitchDoc}
       />
       <StepIndicator />
+      <ResultTabs
+        documentId={docId}
+        predicting={loading}
+        onRunPredict={() => {
+          void predictSingle(pid ?? "", docId).catch((e) =>
+            setError((e as { message?: string })?.message ?? "Predict failed")
+          );
+        }}
+      />
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-auto p-3">
           <AdvancedPanel projectId={pid ?? ""} documentId={docId} />

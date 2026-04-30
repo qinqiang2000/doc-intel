@@ -114,3 +114,35 @@ async def test_predict_404_for_missing_document(client, registered_user):
         json={"processor_key_override": "mock"},
     )
     assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_list_results_empty_when_never_predicted(client, registered_user):
+    _, token = registered_user
+    _, pid, did = await _setup_project_with_doc(client, token)
+    r = await client.get(
+        f"/api/v1/projects/{pid}/documents/{did}/predict/results",
+        headers=_auth(token),
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+@pytest.mark.asyncio
+async def test_list_results_returns_all_versions_newest_first(client, registered_user):
+    _, token = registered_user
+    _, pid, did = await _setup_project_with_doc(client, token)
+    for _ in range(3):
+        r = await client.post(
+            f"/api/v1/projects/{pid}/documents/{did}/predict",
+            headers=_auth(token),
+            json={"processor_key_override": "mock"},
+        )
+        assert r.status_code == 200
+    r = await client.get(
+        f"/api/v1/projects/{pid}/documents/{did}/predict/results",
+        headers=_auth(token),
+    )
+    assert r.status_code == 200
+    items = r.json()
+    assert [it["version"] for it in items] == [3, 2, 1]

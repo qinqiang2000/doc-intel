@@ -141,6 +141,8 @@ export interface BatchProgress {
 interface PredictState {
   loading: Record<string, boolean>;
   results: Record<string, ProcessingResult>;
+  resultsByDoc: Record<string, ProcessingResult[]>;
+  selectedResultByDoc: Record<string, string>;
   batchProgress: BatchProgress | null;
   selectedAnnotationId: string | null;
   currentStep: 0 | 1 | 2 | 3 | 4 | 5;
@@ -152,10 +154,14 @@ interface PredictState {
   setApiFormat: (f: "flat" | "detailed" | "grouped") => void;
   setProcessorOverride: (s: string) => void;
   setPromptOverride: (s: string) => void;
+  setSelectedResult: (documentId: string, resultId: string) => void;
 
   predictSingle: (
     projectId: string, documentId: string, opts?: PredictOptions
   ) => Promise<ProcessingResult>;
+  loadResults: (
+    projectId: string, documentId: string
+  ) => Promise<ProcessingResult[]>;
   predictBatch: (
     projectId: string, documentIds: string[], opts?: PredictOptions
   ) => Promise<void>;
@@ -205,6 +211,8 @@ interface PredictState {
 export const usePredictStore = create<PredictState>((set, get) => ({
   loading: {},
   results: {},
+  resultsByDoc: {},
+  selectedResultByDoc: {},
   batchProgress: null,
   selectedAnnotationId: null,
   currentStep: 0,
@@ -224,6 +232,15 @@ export const usePredictStore = create<PredictState>((set, get) => ({
   setApiFormat: (f) => set({ apiFormat: f }),
   setProcessorOverride: (s) => set({ processorOverride: s }),
   setPromptOverride: (s) => set({ promptOverride: s }),
+  setSelectedResult: (documentId, resultId) => {
+    const list = get().resultsByDoc[documentId] ?? [];
+    const picked = list.find((r) => r.id === resultId);
+    if (!picked) return;
+    set((s) => ({
+      selectedResultByDoc: { ...s.selectedResultByDoc, [documentId]: resultId },
+      results: { ...s.results, [documentId]: picked },
+    }));
+  },
 
   predictSingle: async (projectId, documentId, opts) => {
     set((s) => ({ loading: { ...s.loading, [documentId]: true } }));
@@ -235,15 +252,43 @@ export const usePredictStore = create<PredictState>((set, get) => ({
           processor_key_override: opts?.processorKeyOverride,
         }
       );
-      set((s) => ({
-        results: { ...s.results, [documentId]: r.data },
-        loading: { ...s.loading, [documentId]: false },
-      }));
+      set((s) => {
+        const prev = s.resultsByDoc[documentId] ?? [];
+        return {
+          results: { ...s.results, [documentId]: r.data },
+          resultsByDoc: { ...s.resultsByDoc, [documentId]: [r.data, ...prev] },
+          selectedResultByDoc: { ...s.selectedResultByDoc, [documentId]: r.data.id },
+          loading: { ...s.loading, [documentId]: false },
+        };
+      });
       return r.data;
     } catch (e) {
       set((s) => ({ loading: { ...s.loading, [documentId]: false } }));
       throw extractApiError(e);
     }
+  },
+
+  loadResults: async (projectId, documentId) => {
+    const r = await api.get<ProcessingResult[]>(
+      `/api/v1/projects/${projectId}/documents/${documentId}/predict/results`,
+    );
+    const list = r.data;
+    set((s) => {
+      const prevSel = s.selectedResultByDoc[documentId];
+      const stillValid = list.find((x) => x.id === prevSel);
+      const selected = stillValid ?? list[0] ?? null;
+      const next: Partial<PredictState> = {
+        resultsByDoc: { ...s.resultsByDoc, [documentId]: list },
+      };
+      if (selected) {
+        next.selectedResultByDoc = {
+          ...s.selectedResultByDoc, [documentId]: selected.id,
+        };
+        next.results = { ...s.results, [documentId]: selected };
+      }
+      return next as PredictState;
+    });
+    return list;
   },
 
   predictBatch: async (projectId, documentIds, opts) => {

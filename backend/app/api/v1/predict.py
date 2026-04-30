@@ -12,6 +12,7 @@ from app.core.database import AsyncSessionLocal
 from app.core.deps import CurrentUser, DbSession
 from app.core.exceptions import AppError
 from app.models.document import Document
+from app.models.processing_result import ProcessingResult
 from app.models.project import Project
 from app.models.workspace_member import WorkspaceMember
 from app.schemas.predict import BatchPredictRequest, PredictRequest, ProcessingResultRead
@@ -50,6 +51,34 @@ async def _check_doc_access(db, project_id: str, document_id: str, user_id: str)
     if document is None:
         raise AppError(404, "document_not_found", "Document not found.")
     return project, document
+
+
+@router.get(
+    "/{project_id}/documents/{document_id}/predict/results",
+    response_model=list[ProcessingResultRead],
+)
+async def list_results(
+    project_id: str,
+    document_id: str,
+    db: DbSession,
+    user: CurrentUser,
+) -> list[ProcessingResultRead]:
+    """Return all stored ProcessingResults for a document (newest first).
+
+    Used by the workspace tabs so the user can browse predictions per
+    (processor_key, prompt) combination without re-running the LLM.
+    """
+    await _check_doc_access(db, project_id, document_id, user.id)
+    stmt = (
+        select(ProcessingResult)
+        .where(
+            ProcessingResult.document_id == document_id,
+            ProcessingResult.deleted_at.is_(None),
+        )
+        .order_by(ProcessingResult.version.desc())
+    )
+    rows = (await db.execute(stmt)).scalars().all()
+    return [ProcessingResultRead.model_validate(r) for r in rows]
 
 
 @router.post(
