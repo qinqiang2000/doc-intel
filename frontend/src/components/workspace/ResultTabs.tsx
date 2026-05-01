@@ -1,11 +1,13 @@
 import { useTranslation } from "react-i18next";
-import { usePredictStore } from "../../stores/predict-store";
+import { usePredictStore, type ProcessingResult } from "../../stores/predict-store";
 
 interface ResultTabsProps {
   documentId: string;
   onRunPredict?: () => void;
   predicting?: boolean;
 }
+
+const EMPTY_RESULTS: ProcessingResult[] = [];
 
 function shortKey(processorKey: string): string {
   const parts = processorKey.split("|", 2);
@@ -24,7 +26,7 @@ export default function ResultTabs({
   documentId, onRunPredict, predicting,
 }: ResultTabsProps) {
   const { t } = useTranslation();
-  const list = usePredictStore((s) => s.resultsByDoc[documentId] ?? []);
+  const list = usePredictStore((s) => s.resultsByDoc[documentId] ?? EMPTY_RESULTS);
   const selectedId = usePredictStore((s) => s.selectedResultByDoc[documentId]);
   const setSelected = usePredictStore((s) => s.setSelectedResult);
 
@@ -42,7 +44,7 @@ export default function ResultTabs({
               key={r.id}
               type="button"
               onClick={() => setSelected(documentId, r.id)}
-              title={`v${r.version} · ${formatTime(r.created_at)}`}
+              title={formatTime(r.updated_at || r.created_at)}
               className={
                 "flex items-center gap-2 px-3 py-1 rounded-t-md text-xs whitespace-nowrap " +
                 (isActive
@@ -51,7 +53,6 @@ export default function ResultTabs({
               }
             >
               <span className="font-mono">{shortKey(r.processor_key)}</span>
-              <span className="text-[10px] opacity-70">v{r.version}</span>
             </button>
           );
         })

@@ -23,13 +23,13 @@ afterEach(() => vi.clearAllMocks());
 
 describe("JsonPreview", () => {
   it("renders structured_data as flat formatted JSON by default", () => {
-    render(<JsonPreview structuredData={{ a: 1, b: "x" }} version={2} annotations={[]} />);
+    render(<JsonPreview structuredData={{ a: 1, b: "x" }} annotations={[]} />);
     expect(screen.getByText(/"a": 1/)).toBeInTheDocument();
-    expect(screen.getByText(/v2/)).toBeInTheDocument();
+    expect(screen.getByText(/"b": "x"/)).toBeInTheDocument();
   });
 
   it("shows placeholder when data is null", () => {
-    render(<JsonPreview structuredData={null} version={null} annotations={[]} />);
+    render(<JsonPreview structuredData={null} annotations={[]} />);
     expect(screen.getByText(/No prediction yet/i)).toBeInTheDocument();
   });
 
@@ -38,7 +38,6 @@ describe("JsonPreview", () => {
     render(
       <JsonPreview
         structuredData={{ invoice_number: "INV-1" }}
-        version={1}
         annotations={[ann("invoice_number", { confidence: 0.88 })]}
       />
     );
@@ -57,7 +56,6 @@ describe("JsonPreview", () => {
           items: [{ q: 1 }],
           invoice_number: "INV-1",
         }}
-        version={1}
         annotations={[]}
       />
     );
@@ -70,7 +68,7 @@ describe("JsonPreview", () => {
 
   it("clicking a toggle button updates predict-store.apiFormat", async () => {
     const user = userEvent.setup();
-    render(<JsonPreview structuredData={{ a: 1 }} version={1} annotations={[]} />);
+    render(<JsonPreview structuredData={{ a: 1 }} annotations={[]} />);
     await user.click(screen.getByRole("button", { name: /Detailed/ }));
     expect(usePredictStore.getState().apiFormat).toBe("detailed");
     await user.click(screen.getByRole("button", { name: /Grouped/ }));
@@ -81,7 +79,7 @@ describe("JsonPreview", () => {
 
   it("highlights the active format button", () => {
     usePredictStore.setState({ apiFormat: "detailed" });
-    render(<JsonPreview structuredData={{ a: 1 }} version={1} annotations={[]} />);
+    render(<JsonPreview structuredData={{ a: 1 }} annotations={[]} />);
     const detailed = screen.getByRole("button", { name: /Detailed/ });
     expect(detailed).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: /Flat/ })).toHaveAttribute(

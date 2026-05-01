@@ -67,7 +67,7 @@ async def run_evaluation(
             pr_stmt = (
                 select(ProcessingResult)
                 .where(ProcessingResult.document_id == doc.id)
-                .order_by(ProcessingResult.version.desc())
+                .order_by(ProcessingResult.updated_at.desc())
                 .limit(1)
             )
             pr = (await db.execute(pr_stmt)).scalar_one_or_none()

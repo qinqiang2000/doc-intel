@@ -75,7 +75,7 @@ async def list_results(
             ProcessingResult.document_id == document_id,
             ProcessingResult.deleted_at.is_(None),
         )
-        .order_by(ProcessingResult.version.desc())
+        .order_by(ProcessingResult.updated_at.desc())
     )
     rows = (await db.execute(stmt)).scalars().all()
     return [ProcessingResultRead.model_validate(r) for r in rows]

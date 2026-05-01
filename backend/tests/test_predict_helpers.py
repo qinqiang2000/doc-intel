@@ -104,28 +104,14 @@ def test_infer_schema_simple():
     assert out["scores"] == "array"
 
 
-@pytest.mark.asyncio
-async def test_next_version_initial(session):
-    from app.services.predict import _next_version
-    _, _, d = await _seed(session)
-    assert await _next_version(session, d.id) == 1
-
-
-@pytest.mark.asyncio
-async def test_next_version_increments(session):
-    from app.models.processing_result import ProcessingResult, ProcessingResultSource
-    from app.services.predict import _next_version
-    u, _, d = await _seed(session)
-    session.add(ProcessingResult(
-        document_id=d.id, version=1, structured_data={}, prompt_used="p",
-        processor_key="mock|m", source=ProcessingResultSource.PREDICT, created_by=u.id,
-    ))
-    session.add(ProcessingResult(
-        document_id=d.id, version=5, structured_data={}, prompt_used="p",
-        processor_key="mock|m", source=ProcessingResultSource.PREDICT, created_by=u.id,
-    ))
-    await session.commit()
-    assert await _next_version(session, d.id) == 6
+def test_prompt_hash_is_stable_sha256():
+    from app.services.predict import _prompt_hash
+    h = _prompt_hash("hello")
+    # sha256("hello") = 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+    assert h == "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    assert _prompt_hash("hello") == _prompt_hash("hello")
+    assert _prompt_hash("a") != _prompt_hash("b")
+    assert _prompt_hash("") == _prompt_hash(None)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

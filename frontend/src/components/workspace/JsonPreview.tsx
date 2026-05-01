@@ -4,7 +4,6 @@ import { usePredictStore, type Annotation } from "../../stores/predict-store";
 
 interface Props {
   structuredData: Record<string, unknown> | null;
-  version: number | null;
   annotations: Annotation[];
 }
 
@@ -15,7 +14,7 @@ const LABELS: Record<JsonFormat, string> = {
   grouped: "Grouped",
 };
 
-export default function JsonPreview({ structuredData, version, annotations }: Props) {
+export default function JsonPreview({ structuredData, annotations }: Props) {
   const { t } = useTranslation();
   const apiFormat = usePredictStore((s) => s.apiFormat);
   const setApiFormat = usePredictStore((s) => s.setApiFormat);
@@ -30,7 +29,7 @@ export default function JsonPreview({ structuredData, version, annotations }: Pr
     <div className="bg-surface border border-default rounded p-3 overflow-auto h-full">
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs uppercase font-semibold tracking-wider text-muted">
-          {t("workspacePage.structuredData")}{version != null && ` · v${version}`}
+          {t("workspacePage.structuredData")}
         </div>
         <div className="flex gap-1">
           {FORMATS.map((f) => {

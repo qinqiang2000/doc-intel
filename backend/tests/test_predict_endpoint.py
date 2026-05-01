@@ -38,7 +38,6 @@ async def test_predict_single_mock_processor(client, registered_user):
     )
     assert r.status_code == 200, r.text
     data = r.json()
-    assert data["version"] == 1
     assert data["source"] == "predict"
     assert data["processor_key"].startswith("mock")
     assert data["created_by"] == user["id"]
@@ -46,16 +45,21 @@ async def test_predict_single_mock_processor(client, registered_user):
 
 
 @pytest.mark.asyncio
-async def test_predict_increments_version(client, registered_user):
+async def test_predict_same_model_prompt_upserts_one_row(client, registered_user):
+    """Re-running same processor + prompt overwrites the same row,
+    instead of creating a new version (see migration b7e3a92f5d10)."""
     _, token = registered_user
     _, pid, did = await _setup_project_with_doc(client, token)
-    for expected in (1, 2, 3):
+    ids = []
+    for _ in range(3):
         r = await client.post(
             f"/api/v1/projects/{pid}/documents/{did}/predict",
             headers=_auth(token),
             json={"processor_key_override": "mock"},
         )
-        assert r.json()["version"] == expected
+        assert r.status_code == 200
+        ids.append(r.json()["id"])
+    assert len(set(ids)) == 1, "expected upsert to reuse one row id"
 
 
 @pytest.mark.asyncio
@@ -129,14 +133,21 @@ async def test_list_results_empty_when_never_predicted(client, registered_user):
 
 
 @pytest.mark.asyncio
-async def test_list_results_returns_all_versions_newest_first(client, registered_user):
+async def test_list_results_distinct_per_model_prompt(client, registered_user):
+    """Each (processor_key, prompt) gets one tab; re-runs do not multiply rows.
+    Three runs with two distinct prompts yield exactly two rows."""
     _, token = registered_user
     _, pid, did = await _setup_project_with_doc(client, token)
-    for _ in range(3):
+    payloads = [
+        {"processor_key_override": "mock", "prompt_override": "extract A"},
+        {"processor_key_override": "mock", "prompt_override": "extract B"},
+        {"processor_key_override": "mock", "prompt_override": "extract A"},
+    ]
+    for body in payloads:
         r = await client.post(
             f"/api/v1/projects/{pid}/documents/{did}/predict",
             headers=_auth(token),
-            json={"processor_key_override": "mock"},
+            json=body,
         )
         assert r.status_code == 200
     r = await client.get(
@@ -145,4 +156,6 @@ async def test_list_results_returns_all_versions_newest_first(client, registered
     )
     assert r.status_code == 200
     items = r.json()
-    assert [it["version"] for it in items] == [3, 2, 1]
+    assert len(items) == 2
+    prompts = sorted(it["prompt_used"] for it in items)
+    assert prompts == ["extract A", "extract B"]

@@ -291,7 +291,6 @@ export default function WorkspacePage() {
         <div className="w-[380px] border-l border-default overflow-auto p-3">
           <JsonPreview
             structuredData={result?.structured_data ?? null}
-            version={result?.version ?? null}
             annotations={annotations}
           />
         </div>

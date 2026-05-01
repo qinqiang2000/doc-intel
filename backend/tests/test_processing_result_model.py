@@ -62,9 +62,9 @@ async def test_create_processing_result(session):
     u, _, d = await _seed(session)
     pr = ProcessingResult(
         document_id=d.id,
-        version=1,
         structured_data={"invoice_number": "INV-001"},
         prompt_used="Extract invoice fields.",
+        prompt_hash="h" * 64,
         processor_key="mock|mock-v1.0",
         source=ProcessingResultSource.PREDICT,
         created_by=u.id,
@@ -82,8 +82,8 @@ async def test_pr_cascade_on_document_delete(session):
 
     u, _, d = await _seed(session)
     session.add(ProcessingResult(
-        document_id=d.id, version=1,
-        structured_data={}, prompt_used="x",
+        document_id=d.id,
+        structured_data={}, prompt_used="x", prompt_hash="a" * 64,
         processor_key="mock|m", source=ProcessingResultSource.PREDICT,
         created_by=u.id,
     ))
@@ -109,9 +109,9 @@ async def test_pr_inferred_schema_optional(session):
 
     u, _, d = await _seed(session)
     pr = ProcessingResult(
-        document_id=d.id, version=1,
+        document_id=d.id,
         structured_data={"a": 1}, inferred_schema=None,
-        prompt_used="p", processor_key="mock|m",
+        prompt_used="p", prompt_hash="b" * 64, processor_key="mock|m",
         source=ProcessingResultSource.PREDICT, created_by=u.id,
     )
     session.add(pr)
@@ -120,21 +120,28 @@ async def test_pr_inferred_schema_optional(session):
 
 
 @pytest.mark.asyncio
-async def test_pr_multiple_versions_same_document(session):
+async def test_pr_distinct_keys_same_document(session):
+    """Different (processor_key, prompt_hash) combos coexist for one document."""
     from app.models.processing_result import ProcessingResult, ProcessingResultSource
 
     u, _, d = await _seed(session)
-    for v in (1, 2, 3):
+    combos = [
+        ("mock|m1", "p1" * 32),
+        ("mock|m1", "p2" * 32),
+        ("mock|m2", "p1" * 32),
+    ]
+    for processor_key, prompt_hash in combos:
         session.add(ProcessingResult(
-            document_id=d.id, version=v,
-            structured_data={"v": v}, prompt_used="p",
-            processor_key="mock|m", source=ProcessingResultSource.PREDICT,
-            created_by=u.id,
+            document_id=d.id,
+            structured_data={"k": processor_key + prompt_hash[:2]},
+            prompt_used="p", prompt_hash=prompt_hash,
+            processor_key=processor_key,
+            source=ProcessingResultSource.PREDICT, created_by=u.id,
         ))
     await session.commit()
     rows = (
         await session.execute(
-            select(ProcessingResult).where(ProcessingResult.document_id == d.id).order_by(ProcessingResult.version)
+            select(ProcessingResult).where(ProcessingResult.document_id == d.id)
         )
     ).scalars().all()
-    assert [r.version for r in rows] == [1, 2, 3]
+    assert len(rows) == 3

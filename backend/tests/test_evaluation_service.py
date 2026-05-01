@@ -20,8 +20,9 @@ async def _make_doc_with_predict_and_anns(db, project, user, filename, structure
     await db.refresh(doc)
 
     pr = ProcessingResult(
-        document_id=doc.id, version=1, structured_data=structured_data,
-        inferred_schema=None, prompt_used="p", processor_key="mock|m",
+        document_id=doc.id, structured_data=structured_data,
+        inferred_schema=None, prompt_used="p", prompt_hash="e" * 64,
+        processor_key="mock|m",
         source="predict", created_by=user.id,
     )
     db.add(pr)

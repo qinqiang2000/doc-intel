@@ -6,7 +6,6 @@ import { getToken } from "../lib/auth-storage";
 export interface ProcessingResult {
   id: string;
   document_id: string;
-  version: number;
   structured_data: Record<string, unknown>;
   inferred_schema: Record<string, string> | null;
   prompt_used: string;
@@ -14,6 +13,7 @@ export interface ProcessingResult {
   source: string;
   created_by: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface Annotation {
@@ -254,9 +254,10 @@ export const usePredictStore = create<PredictState>((set, get) => ({
       );
       set((s) => {
         const prev = s.resultsByDoc[documentId] ?? [];
+        const without = prev.filter((p) => p.id !== r.data.id);
         return {
           results: { ...s.results, [documentId]: r.data },
-          resultsByDoc: { ...s.resultsByDoc, [documentId]: [r.data, ...prev] },
+          resultsByDoc: { ...s.resultsByDoc, [documentId]: [r.data, ...without] },
           selectedResultByDoc: { ...s.selectedResultByDoc, [documentId]: r.data.id },
           loading: { ...s.loading, [documentId]: false },
         };

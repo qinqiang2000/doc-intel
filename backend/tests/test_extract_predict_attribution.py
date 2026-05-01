@@ -89,5 +89,5 @@ async def test_extract_persists_processing_result(
         pr = (await s.execute(
             select(ProcessingResult).where(ProcessingResult.document_id == doc_id)
         )).scalar_one()
-        assert pr.version == 1
+        assert pr.prompt_hash and len(pr.prompt_hash) == 64
         assert pr.source == "predict"

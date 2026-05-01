@@ -4,18 +4,20 @@ Layered:
 - build_default_prompt: derive prompt text from Project.template_key
 - _parse_llm_output: tolerant LLM output → dict
 - _infer_schema: rough type per top-level field
-- _next_version: per-document version counter
+- _prompt_hash: sha256 of the prompt text — dedup key for predictions
 - _replace_ai_annotations: replace AI-detected rows; keep manual rows
 - predict_single: orchestrates engine call + writes (T6)
 - predict_batch_stream: async iterator yielding per-doc events (T8)
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+from datetime import datetime, timezone
 from typing import AsyncIterator, Any
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engine.utils import extract_json
@@ -107,13 +109,9 @@ def _infer_schema(data: dict) -> dict:
     return schema
 
 
-async def _next_version(db: AsyncSession, document_id: str) -> int:
-    """Compute next version for a document (max+1, or 1 if none)."""
-    stmt = select(func.max(ProcessingResult.version)).where(
-        ProcessingResult.document_id == document_id
-    )
-    cur = (await db.execute(stmt)).scalar()
-    return (cur or 0) + 1
+def _prompt_hash(prompt: str) -> str:
+    """Stable dedup key for (document, processor_key, prompt) triple."""
+    return hashlib.sha256((prompt or "").encode("utf-8")).hexdigest()
 
 
 async def _replace_ai_annotations(
@@ -128,7 +126,6 @@ async def _replace_ai_annotations(
         Annotation.deleted_at.is_(None),
     )
     existing = (await db.execute(stmt)).scalars().all()
-    from datetime import datetime, timezone
     now = datetime.now(timezone.utc)
     for a in existing:
         a.deleted_at = now
@@ -226,19 +223,35 @@ async def predict_single(
     structured = _parse_llm_output(raw)
     schema = _infer_schema(structured)
 
-    # 6. Write ProcessingResult (version recompute inside transaction)
-    next_version = await _next_version(db, document.id)
-    pr = ProcessingResult(
-        document_id=document.id,
-        version=next_version,
-        structured_data=structured,
-        inferred_schema=schema,
-        prompt_used=prompt,
-        processor_key=final_processor_key,
-        source=ProcessingResultSource.PREDICT,
-        created_by=user.id,
+    # 6. Upsert ProcessingResult by (document_id, processor_key, prompt_hash).
+    # Re-running same model+prompt overwrites the existing PREDICT row instead
+    # of appending a new version — see migration b7e3a92f5d10.
+    prompt_hash = _prompt_hash(prompt)
+    stmt = select(ProcessingResult).where(
+        ProcessingResult.document_id == document.id,
+        ProcessingResult.processor_key == final_processor_key,
+        ProcessingResult.prompt_hash == prompt_hash,
+        ProcessingResult.source == ProcessingResultSource.PREDICT,
+        ProcessingResult.deleted_at.is_(None),
     )
-    db.add(pr)
+    pr = (await db.execute(stmt)).scalar_one_or_none()
+    if pr is not None:
+        pr.structured_data = structured
+        pr.inferred_schema = schema
+        pr.prompt_used = prompt
+        pr.created_by = user.id
+    else:
+        pr = ProcessingResult(
+            document_id=document.id,
+            structured_data=structured,
+            inferred_schema=schema,
+            prompt_used=prompt,
+            prompt_hash=prompt_hash,
+            processor_key=final_processor_key,
+            source=ProcessingResultSource.PREDICT,
+            created_by=user.id,
+        )
+        db.add(pr)
     await db.flush()
 
     # 7. Replace AI annotations

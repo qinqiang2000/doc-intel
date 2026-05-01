@@ -1,11 +1,11 @@
-"""ProcessingResult model — versioned snapshot of LLM extraction output."""
+"""ProcessingResult model — one row per (document, processor_key, prompt_hash)."""
 from __future__ import annotations
 
 import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, gen_uuid
@@ -26,10 +26,10 @@ class ProcessingResult(Base, TimestampMixin):
     document_id: Mapped[str] = mapped_column(
         ForeignKey("documents.id", ondelete="CASCADE"), index=True, nullable=False
     )
-    version: Mapped[int] = mapped_column(Integer, nullable=False)
     structured_data: Mapped[dict] = mapped_column(JSON, nullable=False)
     inferred_schema: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     prompt_used: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     processor_key: Mapped[str] = mapped_column(String(120), nullable=False)
     source: Mapped[ProcessingResultSource] = mapped_column(
         SAEnum(ProcessingResultSource, name="processing_result_source"), nullable=False

@@ -15,7 +15,6 @@ class ProcessingResultRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
     document_id: str
-    version: int
     structured_data: dict[str, Any]
     inferred_schema: dict[str, Any] | None
     prompt_used: str
@@ -23,6 +22,7 @@ class ProcessingResultRead(BaseModel):
     source: str
     created_by: str
     created_at: datetime
+    updated_at: datetime
 
 
 class BatchPredictRequest(BaseModel):

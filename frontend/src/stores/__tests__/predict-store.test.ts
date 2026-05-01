@@ -6,11 +6,12 @@ import { usePredictStore } from "../predict-store";
 let mock: MockAdapter;
 
 const PR = {
-  id: "pr-1", document_id: "d-1", version: 1,
+  id: "pr-1", document_id: "d-1",
   structured_data: { invoice_number: "INV-001" },
   inferred_schema: { invoice_number: "string" },
   prompt_used: "p", processor_key: "mock|m", source: "predict",
-  created_by: "u-1", created_at: "2026-04-28T00:00:00Z",
+  created_by: "u-1",
+  created_at: "2026-04-28T00:00:00Z", updated_at: "2026-04-28T00:00:00Z",
 };
 
 const ANN = {
@@ -79,8 +80,8 @@ describe("predict-store", () => {
 
   it("loadResults stores list and selects newest", async () => {
     const list = [
-      { ...PR, id: "pr-2", version: 2, structured_data: { v: 2 } },
-      { ...PR, id: "pr-1", version: 1, structured_data: { v: 1 } },
+      { ...PR, id: "pr-2", structured_data: { v: 2 } },
+      { ...PR, id: "pr-1", structured_data: { v: 1 } },
     ];
     mock.onGet("/api/v1/projects/p-1/documents/d-1/predict/results").reply(200, list);
     const out = await usePredictStore.getState().loadResults("p-1", "d-1");
@@ -93,8 +94,8 @@ describe("predict-store", () => {
 
   it("loadResults preserves prior selection if still present", async () => {
     const list = [
-      { ...PR, id: "pr-2", version: 2 },
-      { ...PR, id: "pr-1", version: 1 },
+      { ...PR, id: "pr-2" },
+      { ...PR, id: "pr-1" },
     ];
     usePredictStore.setState({
       selectedResultByDoc: { "d-1": "pr-1" },
@@ -107,8 +108,8 @@ describe("predict-store", () => {
 
   it("setSelectedResult swaps the active result", () => {
     const list = [
-      { ...PR, id: "pr-2", version: 2, structured_data: { v: 2 } },
-      { ...PR, id: "pr-1", version: 1, structured_data: { v: 1 } },
+      { ...PR, id: "pr-2", structured_data: { v: 2 } },
+      { ...PR, id: "pr-1", structured_data: { v: 1 } },
     ];
     usePredictStore.setState({
       resultsByDoc: { "d-1": list },
@@ -122,16 +123,30 @@ describe("predict-store", () => {
 
   it("predictSingle prepends to resultsByDoc and selects it", async () => {
     usePredictStore.setState({
-      resultsByDoc: { "d-1": [{ ...PR, id: "pr-old", version: 1 }] },
+      resultsByDoc: { "d-1": [{ ...PR, id: "pr-old" }] },
       selectedResultByDoc: { "d-1": "pr-old" },
     } as never);
     mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
-      ...PR, id: "pr-new", version: 2,
+      ...PR, id: "pr-new",
     });
     await usePredictStore.getState().predictSingle("p-1", "d-1");
     const s = usePredictStore.getState();
     expect(s.resultsByDoc["d-1"].map((r) => r.id)).toEqual(["pr-new", "pr-old"]);
     expect(s.selectedResultByDoc["d-1"]).toBe("pr-new");
+  });
+
+  it("predictSingle replaces existing entry on upsert (same id)", async () => {
+    usePredictStore.setState({
+      resultsByDoc: { "d-1": [{ ...PR, id: "pr-1", structured_data: { v: 1 } }] },
+      selectedResultByDoc: { "d-1": "pr-1" },
+    } as never);
+    mock.onPost("/api/v1/projects/p-1/documents/d-1/predict").reply(200, {
+      ...PR, id: "pr-1", structured_data: { v: 2 },
+    });
+    await usePredictStore.getState().predictSingle("p-1", "d-1");
+    const s = usePredictStore.getState();
+    expect(s.resultsByDoc["d-1"].length).toBe(1);
+    expect(s.resultsByDoc["d-1"][0].structured_data).toEqual({ v: 2 });
   });
 
   it("loadAnnotations populates and returns array", async () => {
