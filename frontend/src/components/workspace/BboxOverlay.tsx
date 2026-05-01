@@ -278,7 +278,7 @@ export default function BboxOverlay({
     >
       {rubber && (
         <div
-          className="absolute border-2 border-dashed border-accent pointer-events-none"
+          className="absolute border-2 border-dashed border-[#6366f1] pointer-events-none"
           style={{
             left: Math.min(rubber.origin.x, rubber.current.x) - pageRect.left,
             top: Math.min(rubber.origin.y, rubber.current.y) - pageRect.top,
@@ -344,7 +344,7 @@ export default function BboxOverlay({
                 <span
                   key={h}
                   data-testid={`bbox-handle-${a.id}-${h}`}
-                  className={`absolute pointer-events-auto bg-accent ${HANDLE_CLASS[h]}`}
+                  className={`absolute pointer-events-auto bg-[#6366f1] ${HANDLE_CLASS[h]}`}
                   style={{ width: 8, height: 8, marginLeft: -4, marginTop: -4 }}
                   onPointerDown={(e) => handleHandlePointerDown(e, a, h)}
                   onPointerMove={handleHandlePointerMove}
@@ -356,7 +356,7 @@ export default function BboxOverlay({
         })}
       {pending && (
         <div
-          className="absolute bg-surface border border-accent rounded p-1 pointer-events-auto"
+          className="absolute bg-[#1a1d27] border border-[#6366f1] rounded p-1 pointer-events-auto"
           style={{
             left: `${pending.bbox.x * 100}%`,
             top: `calc(${(pending.bbox.y + pending.bbox.h) * 100}% + 4px)`,

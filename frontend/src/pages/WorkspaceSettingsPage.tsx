@@ -87,10 +87,10 @@ export default function WorkspaceSettingsPage() {
     }
   }
 
-  if (!ws) return <div className="text-muted">{t("workspace.notFound")}</div>;
+  if (!ws) return <div className="text-[#94a3b8]">{t("workspace.notFound")}</div>;
   if (ws.role !== "owner") {
     return (
-      <div className="text-danger">{t("workspace.ownerOnly")}</div>
+      <div className="text-[#ef4444]">{t("workspace.ownerOnly")}</div>
     );
   }
 
@@ -98,7 +98,7 @@ export default function WorkspaceSettingsPage() {
     <div className="max-w-2xl">
       <h1 className="text-xl font-bold mb-6">{t("workspace.settingsHeader", { name: ws.name })}</h1>
 
-      <section className="bg-surface border border-default rounded p-4 mb-4">
+      <section className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-4 mb-4">
         <h2 className="text-sm font-semibold mb-3">{t("workspace.inviteMember")}</h2>
         <form onSubmit={onInvite} className="flex gap-2">
           <input
@@ -107,24 +107,24 @@ export default function WorkspaceSettingsPage() {
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
             required
-            className="flex-1 bg-surface-input border border-default rounded px-3 py-2 text-sm focus:border-accent outline-none"
+            className="flex-1 bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 text-sm focus:border-[#6366f1] outline-none"
           />
           <button
             type="submit"
-            className="bg-accent hover:bg-accent-hover text-white font-semibold px-4 rounded text-sm"
+            className="bg-[#6366f1] hover:bg-[#818cf8] text-white font-semibold px-4 rounded text-sm"
           >
             {t("workspace.invite")}
           </button>
         </form>
-        {info && <div className="text-success text-xs mt-2">{info}</div>}
+        {info && <div className="text-[#22c55e] text-xs mt-2">{info}</div>}
       </section>
 
-      <section className="bg-surface border border-default rounded p-4 mb-4">
+      <section className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-4 mb-4">
         <h2 className="text-sm font-semibold mb-3">
           {t("workspace.membersWithCount", { count: members.length })}
         </h2>
         {loading ? (
-          <div className="text-subtle text-sm">{t("common.loading")}</div>
+          <div className="text-[#64748b] text-sm">{t("common.loading")}</div>
         ) : (
           <ul className="divide-y divide-default">
             {members.map((m) => (
@@ -134,7 +134,7 @@ export default function WorkspaceSettingsPage() {
               >
                 <div>
                   <div className="text-sm">{m.display_name}</div>
-                  <div className="text-xs text-subtle">
+                  <div className="text-xs text-[#64748b]">
                     {m.email} · {m.role}
                   </div>
                 </div>
@@ -142,7 +142,7 @@ export default function WorkspaceSettingsPage() {
                   <button
                     type="button"
                     onClick={() => onRemove(m.user_id)}
-                    className="text-xs text-danger hover:underline"
+                    className="text-xs text-[#ef4444] hover:underline"
                   >
                     {t("common.remove")}
                   </button>
@@ -153,18 +153,18 @@ export default function WorkspaceSettingsPage() {
         )}
       </section>
 
-      <section className="bg-surface border border-danger rounded p-4">
-        <h2 className="text-sm font-semibold mb-2 text-danger">{t("common.dangerZone")}</h2>
+      <section className="bg-[#1a1d27] border border-danger rounded p-4">
+        <h2 className="text-sm font-semibold mb-2 text-[#ef4444]">{t("common.dangerZone")}</h2>
         <button
           type="button"
           onClick={onDeleteWorkspace}
-          className="bg-danger hover:bg-danger-hover text-white font-semibold px-4 py-2 rounded text-sm"
+          className="bg-[#ef4444] hover:bg-[#dc2626] text-white font-semibold px-4 py-2 rounded text-sm"
         >
           {t("workspace.deleteWorkspace")}
         </button>
       </section>
 
-      {error && <div className="text-danger text-xs mt-4">{error}</div>}
+      {error && <div className="text-[#ef4444] text-xs mt-4">{error}</div>}
     </div>
   );
 }

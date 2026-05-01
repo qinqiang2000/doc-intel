@@ -161,7 +161,7 @@ export default function ProjectDocumentsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">{project?.name ?? "..."}</h1>
-        <div className="text-sm text-muted">
+        <div className="text-sm text-[#94a3b8]">
           {project?.template?.display_name && (
             <span>{project.template.display_name} · </span>
           )}
@@ -178,20 +178,20 @@ export default function ProjectDocumentsPage() {
         <button
           type="button" onClick={() => void onBatchPredict()}
           disabled={selected.size === 0}
-          className="bg-accent hover:bg-accent-hover text-white text-sm px-3 py-1.5 rounded disabled:opacity-50"
+          className="bg-[#6366f1] hover:bg-[#818cf8] text-white text-sm px-3 py-1.5 rounded disabled:opacity-50"
         >
           {t("documents.batchPredictBtn", { count: selected.size })}
         </button>
         <button
           type="button" onClick={() => void onNextUnreviewed()}
-          className="text-sm text-muted border border-default px-3 py-1.5 rounded hover:bg-surface"
+          className="text-sm text-[#94a3b8] border border-[#2a2e3d] px-3 py-1.5 rounded hover:bg-[#1a1d27]"
         >
           {t("documents.nextUnreviewed")}
         </button>
         <button
           type="button"
           onClick={() => ws && navigate(`/workspaces/${ws.slug}/projects/${pid}/evaluate`)}
-          className="text-xs text-accent hover:underline"
+          className="text-xs text-[#6366f1] hover:underline"
           title={t("documents.evaluateBtn")}
         >
           {t("documents.evaluateBtn")}
@@ -199,7 +199,7 @@ export default function ProjectDocumentsPage() {
         <button
           type="button"
           onClick={() => ws && navigate(`/workspaces/${ws.slug}/projects/${pid}/api`)}
-          className="text-xs text-accent hover:underline"
+          className="text-xs text-[#6366f1] hover:underline"
           title={t("documents.apiBtn")}
         >
           {t("documents.apiBtn")}
@@ -212,9 +212,9 @@ export default function ProjectDocumentsPage() {
           placeholder={t("documents.searchFilename")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-surface-input border border-default rounded px-3 py-1.5 text-sm focus:border-accent outline-none"
+          className="bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-1.5 text-sm focus:border-[#6366f1] outline-none"
         />
-        <label className="text-xs text-muted flex items-center gap-1">
+        <label className="text-xs text-[#94a3b8] flex items-center gap-1">
           {t("documents.groundTruth")}
           <select
             value={gt}
@@ -222,19 +222,19 @@ export default function ProjectDocumentsPage() {
               setGt(e.target.value as "all" | "true" | "false");
               setPage(1);
             }}
-            className="bg-surface-input border border-default rounded px-2 py-1 text-sm"
+            className="bg-[#0f1117] border border-[#2a2e3d] rounded px-2 py-1 text-sm"
           >
             <option value="all">{t("common.all")}</option>
             <option value="true">{t("documents.gtOnly")}</option>
             <option value="false">{t("documents.gtNone")}</option>
           </select>
         </label>
-        <label className="text-xs text-muted flex items-center gap-1">
+        <label className="text-xs text-[#94a3b8] flex items-center gap-1">
           {t("documents.sortBy")}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-surface-input border border-default rounded px-2 py-1 text-sm"
+            className="bg-[#0f1117] border border-[#2a2e3d] rounded px-2 py-1 text-sm"
           >
             <option value="created_at">{t("documents.createdAt")}</option>
             <option value="filename">{t("documents.filename")}</option>
@@ -244,22 +244,22 @@ export default function ProjectDocumentsPage() {
         <button
           type="button"
           onClick={() => setOrder(order === "desc" ? "asc" : "desc")}
-          className="text-xs text-muted hover:text-primary"
+          className="text-xs text-[#94a3b8] hover:text-[#e2e8f0]"
         >
           {order === "desc" ? "↓" : "↑"}
         </button>
       </div>
 
-      {error && <div className="text-danger text-xs mb-3">{error}</div>}
+      {error && <div className="text-[#ef4444] text-xs mb-3">{error}</div>}
 
       {loading && docs.items.length === 0 ? (
-        <div className="text-subtle text-sm">{t("common.loading")}</div>
+        <div className="text-[#64748b] text-sm">{t("common.loading")}</div>
       ) : docs.items.length === 0 ? (
-        <div className="text-subtle text-sm">{t("documents.noDocuments")}</div>
+        <div className="text-[#64748b] text-sm">{t("documents.noDocuments")}</div>
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-xs uppercase text-muted border-b border-default">
+            <tr className="text-xs uppercase text-[#94a3b8] border-b border-[#2a2e3d]">
               <th className="text-left py-2 w-8"></th>
               <th className="text-left py-2">{t("documents.filename")}</th>
               <th className="text-left">{t("documents.size")}</th>
@@ -284,7 +284,7 @@ export default function ProjectDocumentsPage() {
                 <tr
                   key={d.id}
                   onClick={openWorkspace}
-                  className="border-b border-surface cursor-pointer hover:bg-surface transition-colors"
+                  className="border-b border-surface cursor-pointer hover:bg-[#1a1d27] transition-colors"
                 >
                   <td onClick={stop}>
                     <input
@@ -298,34 +298,34 @@ export default function ProjectDocumentsPage() {
                   </td>
                   <td className="py-2">{d.filename}</td>
                   <td>{(d.file_size / 1024).toFixed(1)} KB</td>
-                  <td className="text-muted">{d.mime_type}</td>
+                  <td className="text-[#94a3b8]">{d.mime_type}</td>
                   <td>{d.status}</td>
                   <td>
                     {d.is_ground_truth ? (
-                      <span className="text-success text-xs">● {t("documents.gtShort")}</span>
+                      <span className="text-[#22c55e] text-xs">● {t("documents.gtShort")}</span>
                     ) : (
-                      <span className="text-subtle text-xs">—</span>
+                      <span className="text-[#64748b] text-xs">—</span>
                     )}
                   </td>
                   <td className="text-right" onClick={stop}>
                     <button
                       type="button"
                       onClick={openWorkspace}
-                      className="text-xs text-accent hover:underline mr-3"
+                      className="text-xs text-[#6366f1] hover:underline mr-3"
                     >
                       {t("documents.openWorkspace")}
                     </button>
                     <button
                       type="button"
                       onClick={() => void toggleGT(d)}
-                      className="text-xs text-muted hover:text-primary mr-3"
+                      className="text-xs text-[#94a3b8] hover:text-[#e2e8f0] mr-3"
                     >
                       {d.is_ground_truth ? t("documents.unmarkGT") : t("documents.markGT")}
                     </button>
                     <button
                       type="button"
                       onClick={() => void onDelete(d)}
-                      className="text-xs text-danger hover:underline"
+                      className="text-xs text-[#ef4444] hover:underline"
                     >
                       {t("common.delete")}
                     </button>
@@ -343,18 +343,18 @@ export default function ProjectDocumentsPage() {
             type="button"
             disabled={page === 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="text-muted disabled:opacity-30"
+            className="text-[#94a3b8] disabled:opacity-30"
           >
             {t("common.previous")}
           </button>
-          <span className="text-subtle">
+          <span className="text-[#64748b]">
             {page} / {totalPages}
           </span>
           <button
             type="button"
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="text-muted disabled:opacity-30"
+            className="text-[#94a3b8] disabled:opacity-30"
           >
             {t("common.next")}
           </button>

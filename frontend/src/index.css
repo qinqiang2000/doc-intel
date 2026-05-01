@@ -2,90 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ----- Theme tokens ----- */
-:root,
-[data-theme="dark"] {
-  --bg-canvas: #0f1117;
-  --bg-surface: #1a1d27;
-  --bg-surface-2: #232736;
-  --bg-surface-hover: #232736;
-  --bg-input: #0f1117;
-  --bg-overlay: rgba(0, 0, 0, 0.5);
-  --bg-code: #0a0c11;
-
-  --text-primary: #e2e8f0;
-  --text-muted: #94a3b8;
-  --text-subtle: #64748b;
-  --text-code: #a5f3fc;
-
-  --border-default: #2a2e3d;
-  --border-strong: #475569;
-
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --accent-strong: #312e81;
-  --accent-soft: rgba(99, 102, 241, 0.12);
-
-  --success: #22c55e;
-  --success-soft: #1d3f24;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --danger-hover: #dc2626;
-  --danger-soft: #3f1d1d;
-  --info: #3b82f6;
-
-  --diff-removed-bg: #3f1d1d;
-  --diff-removed-fg: #fca5a5;
-  --diff-added-bg: #1d3f24;
-  --diff-added-fg: #86efac;
-
-  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
-
-  color-scheme: dark;
-}
-
-[data-theme="light"] {
-  --bg-canvas: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-surface-2: #f1f5f9;
-  --bg-surface-hover: #eef2ff;
-  --bg-input: #ffffff;
-  --bg-overlay: rgba(15, 23, 42, 0.4);
-  --bg-code: #f1f5f9;
-
-  --text-primary: #0f172a;
-  --text-muted: #475569;
-  --text-subtle: #64748b;
-  --text-code: #0e7490;
-
-  --border-default: #e2e8f0;
-  --border-strong: #cbd5e1;
-
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-strong: #c7d2fe;
-  --accent-soft: rgba(79, 70, 229, 0.10);
-
-  --success: #16a34a;
-  --success-soft: #dcfce7;
-  --warning: #d97706;
-  --danger: #dc2626;
-  --danger-hover: #b91c1c;
-  --danger-soft: #fee2e2;
-  --info: #2563eb;
-
-  --diff-removed-bg: #fee2e2;
-  --diff-removed-fg: #b91c1c;
-  --diff-added-bg: #dcfce7;
-  --diff-added-fg: #166534;
-
-  --scrollbar-thumb: rgba(15, 23, 42, 0.15);
-  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.3);
-
-  color-scheme: light;
-}
-
 @layer base {
   *, *::before, *::after {
     box-sizing: border-box;
@@ -96,8 +12,7 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: var(--bg-canvas);
-    color: var(--text-primary);
+    @apply bg-gray-50 text-gray-900;
   }
 
   #root {
@@ -117,6 +32,7 @@
   }
 }
 
+/* Dark scrollbar for workspace */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -127,12 +43,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 @keyframes gradient-flow {

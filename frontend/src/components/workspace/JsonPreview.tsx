@@ -26,9 +26,9 @@ export default function JsonPreview({ structuredData, annotations }: Props) {
       : JSON.stringify(transformed, null, 2);
 
   return (
-    <div className="bg-surface border border-default rounded p-3 overflow-auto h-full">
+    <div className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-3 overflow-auto h-full">
       <div className="flex items-center justify-between mb-2">
-        <div className="text-xs uppercase font-semibold tracking-wider text-muted">
+        <div className="text-xs uppercase font-semibold tracking-wider text-[#94a3b8]">
           {t("workspacePage.structuredData")}
         </div>
         <div className="flex gap-1">
@@ -42,8 +42,8 @@ export default function JsonPreview({ structuredData, annotations }: Props) {
                 onClick={() => setApiFormat(f)}
                 className={`text-xs px-2 py-0.5 rounded ${
                   active
-                    ? "bg-accent text-white"
-                    : "bg-surface-input text-muted hover:text-primary"
+                    ? "bg-[#6366f1] text-white"
+                    : "bg-[#0f1117] text-[#94a3b8] hover:text-[#e2e8f0]"
                 }`}
               >
                 {LABELS[f]}
@@ -54,13 +54,13 @@ export default function JsonPreview({ structuredData, annotations }: Props) {
       </div>
       {body !== null ? (
         <pre
-          className="text-xs leading-relaxed whitespace-pre-wrap text-code"
+          className="text-xs leading-relaxed whitespace-pre-wrap text-[#a5f3fc]"
           style={{ fontFamily: "Fira Code, Courier New, monospace" }}
         >
           {body}
         </pre>
       ) : (
-        <div className="text-xs text-subtle">{t("workspacePage.noPrediction")}</div>
+        <div className="text-xs text-[#64748b]">{t("workspacePage.noPrediction")}</div>
       )}
     </div>
   );

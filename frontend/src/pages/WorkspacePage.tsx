@@ -184,17 +184,17 @@ export default function WorkspacePage() {
 
   if (empty) {
     return (
-      <div className="text-center text-muted py-12">
+      <div className="text-center text-[#94a3b8] py-12">
         <div className="text-sm mb-2">{t("documents.noDocumentsInProject")}</div>
-        <div className="text-xs text-subtle">{t("documents.uploadFirst")}</div>
+        <div className="text-xs text-[#64748b]">{t("documents.uploadFirst")}</div>
       </div>
     );
   }
   if (error) {
-    return <div className="text-center text-danger py-12 text-sm">{error}</div>;
+    return <div className="text-center text-[#ef4444] py-12 text-sm">{error}</div>;
   }
   if (!docId || !currentDoc) {
-    return <div className="text-center text-muted py-12 text-sm">{t("workspacePage.loadingWorkspace")}</div>;
+    return <div className="text-center text-[#94a3b8] py-12 text-sm">{t("workspacePage.loadingWorkspace")}</div>;
   }
 
   const isImage = currentDoc.mime_type.startsWith("image/");
@@ -237,7 +237,7 @@ export default function WorkspacePage() {
         <div className="flex-1 overflow-auto p-3">
           <AdvancedPanel projectId={pid ?? ""} documentId={docId} />
           {loading && !result ? (
-            <div className="text-sm text-muted p-4">{t("workspacePage.predictingWithEta")}</div>
+            <div className="text-sm text-[#94a3b8] p-4">{t("workspacePage.predictingWithEta")}</div>
           ) : previewObjectUrl ? (
             isImage ? (
               <div className="relative inline-block">
@@ -272,11 +272,11 @@ export default function WorkspacePage() {
               />
             )
           ) : (
-            <div className="text-sm text-muted p-4">{t("workspacePage.loadingPreview")}</div>
+            <div className="text-sm text-[#94a3b8] p-4">{t("workspacePage.loadingPreview")}</div>
           )}
         </div>
-        <div className="w-[360px] border-l border-default overflow-auto p-3">
-          <div className="text-xs uppercase font-semibold tracking-wider text-muted mb-2">
+        <div className="w-[360px] border-l border-[#2a2e3d] overflow-auto p-3">
+          <div className="text-xs uppercase font-semibold tracking-wider text-[#94a3b8] mb-2">
             {t("workspacePage.fieldsTitle")}
           </div>
           <AnnotationEditor
@@ -288,7 +288,7 @@ export default function WorkspacePage() {
             onRestoreLocal={handleRestoreLocal}
           />
         </div>
-        <div className="w-[380px] border-l border-default overflow-auto p-3">
+        <div className="w-[380px] border-l border-[#2a2e3d] overflow-auto p-3">
           <JsonPreview
             structuredData={result?.structured_data ?? null}
             annotations={annotations}

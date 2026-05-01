@@ -236,10 +236,6 @@
   "appShell": {
     "logout": "Sign out",
     "settings": "Settings",
-    "language": "Language",
-    "theme": "Theme",
-    "themeSystem": "System",
-    "themeDark": "Dark",
-    "themeLight": "Light"
+    "language": "Language"
   }
 }

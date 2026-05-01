@@ -48,11 +48,11 @@ export default function WorkspaceCreatePage() {
       <h1 className="text-xl font-bold mb-6">{t("workspace.createNewWorkspaceTitle")}</h1>
       <form
         onSubmit={onSubmit}
-        className="bg-surface border border-default rounded p-6"
+        className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-6"
       >
         <label
           htmlFor="ws-name"
-          className="block text-xs uppercase font-semibold tracking-wider text-muted mb-1"
+          className="block text-xs uppercase font-semibold tracking-wider text-[#94a3b8] mb-1"
         >
           {t("common.name")}
         </label>
@@ -63,12 +63,12 @@ export default function WorkspaceCreatePage() {
           maxLength={120}
           value={name}
           onChange={(e) => autoFillSlug(e.target.value)}
-          className="w-full bg-surface-input border border-default rounded px-3 py-2 mb-4 focus:border-accent outline-none text-sm"
+          className="w-full bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 mb-4 focus:border-[#6366f1] outline-none text-sm"
         />
 
         <label
           htmlFor="ws-slug"
-          className="block text-xs uppercase font-semibold tracking-wider text-muted mb-1"
+          className="block text-xs uppercase font-semibold tracking-wider text-[#94a3b8] mb-1"
         >
           {t("workspace.slugHint")}
         </label>
@@ -83,12 +83,12 @@ export default function WorkspaceCreatePage() {
             setSlugTouched(true);
             setSlug(e.target.value.toLowerCase());
           }}
-          className="w-full bg-surface-input border border-default rounded px-3 py-2 mb-4 focus:border-accent outline-none text-sm font-mono"
+          className="w-full bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 mb-4 focus:border-[#6366f1] outline-none text-sm font-mono"
         />
 
         <label
           htmlFor="ws-desc"
-          className="block text-xs uppercase font-semibold tracking-wider text-muted mb-1"
+          className="block text-xs uppercase font-semibold tracking-wider text-[#94a3b8] mb-1"
         >
           {t("common.descriptionOptional")}
         </label>
@@ -97,15 +97,15 @@ export default function WorkspaceCreatePage() {
           maxLength={500}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full bg-surface-input border border-default rounded px-3 py-2 mb-6 focus:border-accent outline-none text-sm h-20"
+          className="w-full bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 mb-6 focus:border-[#6366f1] outline-none text-sm h-20"
         />
 
-        {error && <div className="text-danger text-xs mb-4">{error}</div>}
+        {error && <div className="text-[#ef4444] text-xs mb-4">{error}</div>}
 
         <button
           type="submit"
           disabled={submitting}
-          className="bg-accent hover:bg-accent-hover text-white font-semibold px-4 py-2 rounded text-sm disabled:opacity-50"
+          className="bg-[#6366f1] hover:bg-[#818cf8] text-white font-semibold px-4 py-2 rounded text-sm disabled:opacity-50"
         >
           {submitting ? t("common.creating") : t("workspace.createWorkspace")}
         </button>

@@ -127,7 +127,7 @@ export default function PublishPage() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => slug && pid && navigate(`/workspaces/${slug}/projects/${pid}`)}
-          className="text-xs text-muted hover:text-primary"
+          className="text-xs text-[#94a3b8] hover:text-[#e2e8f0]"
         >
           {t("publish.back")}
         </button>
@@ -138,14 +138,14 @@ export default function PublishPage() {
       </div>
 
       {error && (
-        <div className="text-xs text-danger bg-danger-soft border border-danger rounded p-2">
+        <div className="text-xs text-[#ef4444] bg-[#3f1d1d] border border-danger rounded p-2">
           {error}
         </div>
       )}
 
-      <section className="bg-surface-input border border-default rounded p-4">
+      <section className="bg-[#0f1117] border border-[#2a2e3d] rounded p-4">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-xs uppercase font-semibold tracking-wider text-muted">
+          <span className="text-xs uppercase font-semibold tracking-wider text-[#94a3b8]">
             {t("publish.status")}
           </span>
           <StatusBadge status={status} />
@@ -157,13 +157,13 @@ export default function PublishPage() {
               value={apiCodeInput}
               onChange={(e) => setApiCodeInput(e.target.value)}
               placeholder={t("publish.apiCodePlaceholder")}
-              className="bg-surface border border-default rounded px-2 py-1 text-sm flex-1 max-w-md"
+              className="bg-[#1a1d27] border border-[#2a2e3d] rounded px-2 py-1 text-sm flex-1 max-w-md"
             />
             <button
               type="button"
               disabled={busy || !apiCodeInput.trim()}
               onClick={() => void handlePublish()}
-              className="bg-accent text-white px-3 py-1 rounded text-xs disabled:opacity-50"
+              className="bg-[#6366f1] text-white px-3 py-1 rounded text-xs disabled:opacity-50"
             >
               {t("publish.publish")}
             </button>
@@ -172,13 +172,13 @@ export default function PublishPage() {
 
         {status === "published" && project?.api_code && (
           <div>
-            <div className="text-xs text-muted mb-1">{t("publish.publicUrl")}</div>
-            <pre className="bg-code-bg p-2 rounded text-xs text-code mb-2">{publicUrl}</pre>
+            <div className="text-xs text-[#94a3b8] mb-1">{t("publish.publicUrl")}</div>
+            <pre className="bg-[#0a0c11] p-2 rounded text-xs text-[#a5f3fc] mb-2">{publicUrl}</pre>
             <button
               type="button"
               disabled={busy}
               onClick={() => void handleUnpublish()}
-              className="text-xs text-danger hover:underline"
+              className="text-xs text-[#ef4444] hover:underline"
             >
               {t("publish.unpublish")}
             </button>
@@ -187,14 +187,14 @@ export default function PublishPage() {
 
         {status === "disabled" && project?.api_code && (
           <div>
-            <div className="text-xs text-muted mb-1">
+            <div className="text-xs text-[#94a3b8] mb-1">
               {t("publish.apiCodeDisabled", { code: project.api_code })}
             </div>
             <button
               type="button"
               disabled={busy}
               onClick={() => void handlePublish()}
-              className="bg-accent text-white px-3 py-1 rounded text-xs disabled:opacity-50"
+              className="bg-[#6366f1] text-white px-3 py-1 rounded text-xs disabled:opacity-50"
             >
               {t("publish.republish")}
             </button>
@@ -202,38 +202,38 @@ export default function PublishPage() {
         )}
       </section>
 
-      <section className="bg-surface-input border border-default rounded p-4">
+      <section className="bg-[#0f1117] border border-[#2a2e3d] rounded p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs uppercase font-semibold tracking-wider text-muted">
+          <span className="text-xs uppercase font-semibold tracking-wider text-[#94a3b8]">
             {t("publish.apiKeys")}
           </span>
           <button
             type="button"
             onClick={() => setNewKeyOpen(true)}
-            className="text-xs text-accent hover:underline"
+            className="text-xs text-[#6366f1] hover:underline"
           >
             {t("publish.newKey")}
           </button>
         </div>
         {keys.length === 0 ? (
-          <div className="text-xs text-subtle text-center py-4">
+          <div className="text-xs text-[#64748b] text-center py-4">
             {t("publish.noKeys")}
           </div>
         ) : (
           <div className="space-y-1">
             {keys.map((k) => (
-              <div key={k.id} className="flex items-center justify-between bg-surface rounded p-2">
+              <div key={k.id} className="flex items-center justify-between bg-[#1a1d27] rounded p-2">
                 <div>
-                  <span className="font-mono text-code">{k.key_prefix}···</span>
-                  {k.name && <span className="ml-2 italic text-muted">"{k.name}"</span>}
-                  <span className="ml-2 text-xs text-subtle">
+                  <span className="font-mono text-[#a5f3fc]">{k.key_prefix}···</span>
+                  {k.name && <span className="ml-2 italic text-[#94a3b8]">"{k.name}"</span>}
+                  <span className="ml-2 text-xs text-[#64748b]">
                     {t("publish.lastUsed", { when: k.last_used_at ?? t("publish.never") })}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => void handleDeleteKey(k.id)}
-                  className="text-xs text-danger hover:underline"
+                  className="text-xs text-[#ef4444] hover:underline"
                   title={t("common.delete")}
                 >
                   🗑
@@ -245,11 +245,11 @@ export default function PublishPage() {
       </section>
 
       {project?.api_code && status === "published" && (
-        <section className="bg-surface-input border border-default rounded p-4">
-          <div className="text-xs uppercase font-semibold tracking-wider text-muted mb-2">
+        <section className="bg-[#0f1117] border border-[#2a2e3d] rounded p-4">
+          <div className="text-xs uppercase font-semibold tracking-wider text-[#94a3b8] mb-2">
             {t("publish.tryItCurl")}
           </div>
-          <pre className="text-xs whitespace-pre-wrap bg-code-bg p-2 rounded text-code">
+          <pre className="text-xs whitespace-pre-wrap bg-[#0a0c11] p-2 rounded text-[#a5f3fc]">
 {`curl -X POST "${publicUrl}" \\
   -H "X-Api-Key: dik_..." \\
   -F "file=@invoice.pdf"`}
@@ -278,8 +278,8 @@ function StatusBadge({ status }: { status: Status }) {
   const { t } = useTranslation();
   const styles: Record<Status, string> = {
     draft: "bg-subtle text-white",
-    published: "bg-success text-white",
-    disabled: "bg-danger text-white",
+    published: "bg-[#22c55e] text-white",
+    disabled: "bg-[#ef4444] text-white",
   };
   const label: Record<Status, string> = {
     draft: t("publish.draft"),
@@ -305,8 +305,8 @@ function NewKeyModal({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="fixed inset-0 bg-surface-overlay flex items-center justify-center z-50">
-      <div className="bg-surface border border-default rounded p-4 w-[480px] space-y-3">
+    <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50">
+      <div className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-4 w-[480px] space-y-3">
         {!revealedKey ? (
           <>
             <h2 className="font-semibold">{t("publish.newKeyTitle")}</h2>
@@ -315,16 +315,16 @@ function NewKeyModal({
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
               placeholder={t("publish.keyNamePlaceholder")}
-              className="w-full bg-surface-input border border-default rounded px-2 py-1 text-sm"
+              className="w-full bg-[#0f1117] border border-[#2a2e3d] rounded px-2 py-1 text-sm"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={onClose} className="text-xs text-muted px-3 py-1">
+              <button onClick={onClose} className="text-xs text-[#94a3b8] px-3 py-1">
                 {t("common.cancel")}
               </button>
               <button
                 disabled={busy}
                 onClick={onSubmit}
-                className="bg-accent text-white text-xs px-3 py-1 rounded disabled:opacity-50"
+                className="bg-[#6366f1] text-white text-xs px-3 py-1 rounded disabled:opacity-50"
               >
                 {t("publish.createKey")}
               </button>
@@ -333,16 +333,16 @@ function NewKeyModal({
         ) : (
           <>
             <h2 className="font-semibold">{t("publish.newKeyHeader")}</h2>
-            <div className="text-xs text-diff-removed-fg bg-danger-soft border border-danger rounded p-2">
+            <div className="text-xs text-[#fca5a5] bg-[#3f1d1d] border border-danger rounded p-2">
               {t("publish.newKeyWarning")}
             </div>
-            <pre className="text-xs whitespace-pre-wrap bg-code-bg p-2 rounded text-code font-mono break-all">
+            <pre className="text-xs whitespace-pre-wrap bg-[#0a0c11] p-2 rounded text-[#a5f3fc] font-mono break-all">
               {revealedKey.key}
             </pre>
             <div className="flex justify-end">
               <button
                 onClick={onClose}
-                className="bg-accent text-white text-xs px-3 py-1 rounded"
+                className="bg-[#6366f1] text-white text-xs px-3 py-1 rounded"
               >
                 {t("common.done")}
               </button>

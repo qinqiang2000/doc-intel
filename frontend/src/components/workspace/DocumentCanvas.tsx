@@ -33,7 +33,7 @@ export default function DocumentCanvas({
         <Document
           file={previewUrl}
           onLoadSuccess={({ numPages: n }) => setNumPages(n)}
-          loading={<div className="text-sm text-muted p-4">{t("workspacePage.loadingPdf")}</div>}
+          loading={<div className="text-sm text-[#94a3b8] p-4">{t("workspacePage.loadingPdf")}</div>}
         >
           {Array.from({ length: numPages || 1 }, (_, i) => (
             <PageWithOverlay
@@ -48,9 +48,9 @@ export default function DocumentCanvas({
   }
 
   return (
-    <div className="text-center text-muted p-12 border border-dashed border-default rounded">
+    <div className="text-center text-[#94a3b8] p-12 border border-dashed border-[#2a2e3d] rounded">
       <div className="text-sm mb-1">📄 {filename}</div>
-      <div className="text-xs text-subtle">
+      <div className="text-xs text-[#64748b]">
         {t("workspacePage.previewUnsupported", { mime: mimeType })}
       </div>
     </div>
@@ -79,7 +79,7 @@ function PageWithOverlay({ pageNumber, renderOverlay }: PageWithOverlayProps) {
   }, []);
 
   return (
-    <div ref={wrapperRef} className="relative mb-2 border border-default">
+    <div ref={wrapperRef} className="relative mb-2 border border-[#2a2e3d]">
       <Page pageNumber={pageNumber} renderTextLayer={false} renderAnnotationLayer={false} />
       {renderOverlay && rect ? renderOverlay(pageNumber, rect) : null}
     </div>

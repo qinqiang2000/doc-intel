@@ -102,15 +102,15 @@ export default function DocumentUploader({ projectId, onUploaded }: Props) {
   }
 
   return (
-    <div className="bg-surface border border-dashed border-default rounded p-6">
+    <div className="bg-[#1a1d27] border border-dashed border-[#2a2e3d] rounded p-6">
       <div
         onDrop={onDrop}
         onDragOver={(e) => e.preventDefault()}
         className="text-center cursor-pointer"
         onClick={() => fileInputRef.current?.click()}
       >
-        <div className="text-sm text-muted">{t("documents.dropZone")}</div>
-        <div className="text-xs text-subtle mt-1">{t("documents.dropHint")}</div>
+        <div className="text-sm text-[#94a3b8]">{t("documents.dropZone")}</div>
+        <div className="text-xs text-[#64748b] mt-1">{t("documents.dropHint")}</div>
         <input
           ref={fileInputRef}
           type="file"
@@ -127,10 +127,10 @@ export default function DocumentUploader({ projectId, onUploaded }: Props) {
               key={idx}
               className={
                 r.status === "done"
-                  ? "text-success"
+                  ? "text-[#22c55e]"
                   : r.status === "error"
-                  ? "text-danger"
-                  : "text-muted"
+                  ? "text-[#ef4444]"
+                  : "text-[#94a3b8]"
               }
             >
               {r.status === "done"

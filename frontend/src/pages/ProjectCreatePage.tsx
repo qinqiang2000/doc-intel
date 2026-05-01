@@ -64,7 +64,7 @@ export default function ProjectCreatePage() {
       <h1 className="text-2xl font-bold mb-6">{t("project.createNewProjectTitle")}</h1>
 
       <section className="mb-6">
-        <h2 className="text-xs uppercase font-semibold tracking-wider text-muted mb-2">
+        <h2 className="text-xs uppercase font-semibold tracking-wider text-[#94a3b8] mb-2">
           {t("project.stepChooseTemplate")}
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -73,16 +73,16 @@ export default function ProjectCreatePage() {
               key={tpl.key}
               type="button"
               onClick={() => setPicked(tpl)}
-              className={`bg-surface border rounded p-3 text-left text-sm hover:bg-surface-hover ${
+              className={`bg-[#1a1d27] border rounded p-3 text-left text-sm hover:bg-[#232736] ${
                 picked?.key === tpl.key
-                  ? "border-accent"
-                  : "border-default"
+                  ? "border-[#6366f1]"
+                  : "border-[#2a2e3d]"
               }`}
             >
               <div className="font-semibold mb-1">{tpl.display_name}</div>
-              <div className="text-xs text-subtle">{tpl.description}</div>
+              <div className="text-xs text-[#64748b]">{tpl.description}</div>
               {tpl.expected_fields.length > 0 && (
-                <div className="text-[10px] text-muted mt-1">
+                <div className="text-[10px] text-[#94a3b8] mt-1">
                   {t("project.presetFields", { count: tpl.expected_fields.length })}
                 </div>
               )}
@@ -91,12 +91,12 @@ export default function ProjectCreatePage() {
         </div>
       </section>
 
-      <form onSubmit={onSubmit} className="bg-surface border border-default rounded p-6">
-        <h2 className="text-xs uppercase font-semibold tracking-wider text-muted mb-3">
+      <form onSubmit={onSubmit} className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-6">
+        <h2 className="text-xs uppercase font-semibold tracking-wider text-[#94a3b8] mb-3">
           {t("project.stepProjectInfo")}
         </h2>
 
-        <label htmlFor="proj-name" className="block text-xs text-muted mb-1">
+        <label htmlFor="proj-name" className="block text-xs text-[#94a3b8] mb-1">
           {t("common.name")}
         </label>
         <input
@@ -106,10 +106,10 @@ export default function ProjectCreatePage() {
           maxLength={120}
           value={name}
           onChange={(e) => autoSlug(e.target.value)}
-          className="w-full bg-surface-input border border-default rounded px-3 py-2 mb-3 focus:border-accent outline-none text-sm"
+          className="w-full bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 mb-3 focus:border-[#6366f1] outline-none text-sm"
         />
 
-        <label htmlFor="proj-slug" className="block text-xs text-muted mb-1">
+        <label htmlFor="proj-slug" className="block text-xs text-[#94a3b8] mb-1">
           {t("project.slug")}
         </label>
         <input
@@ -123,10 +123,10 @@ export default function ProjectCreatePage() {
             setSlugTouched(true);
             setSlug(e.target.value.toLowerCase());
           }}
-          className="w-full bg-surface-input border border-default rounded px-3 py-2 mb-3 focus:border-accent outline-none text-sm font-mono"
+          className="w-full bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 mb-3 focus:border-[#6366f1] outline-none text-sm font-mono"
         />
 
-        <label htmlFor="proj-desc" className="block text-xs text-muted mb-1">
+        <label htmlFor="proj-desc" className="block text-xs text-[#94a3b8] mb-1">
           {t("common.descriptionOptional")}
         </label>
         <textarea
@@ -134,15 +134,15 @@ export default function ProjectCreatePage() {
           maxLength={500}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full bg-surface-input border border-default rounded px-3 py-2 mb-4 focus:border-accent outline-none text-sm h-20"
+          className="w-full bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 mb-4 focus:border-[#6366f1] outline-none text-sm h-20"
         />
 
-        {error && <div className="text-danger text-xs mb-3">{error}</div>}
+        {error && <div className="text-[#ef4444] text-xs mb-3">{error}</div>}
 
         <button
           type="submit"
           disabled={!picked || submitting}
-          className="bg-accent hover:bg-accent-hover text-white font-semibold px-4 py-2 rounded text-sm disabled:opacity-50"
+          className="bg-[#6366f1] hover:bg-[#818cf8] text-white font-semibold px-4 py-2 rounded text-sm disabled:opacity-50"
         >
           {submitting ? t("common.creating") : t("project.createProject")}
         </button>

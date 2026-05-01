@@ -31,9 +31,9 @@ export default function ResultTabs({
   const setSelected = usePredictStore((s) => s.setSelectedResult);
 
   return (
-    <div className="flex items-center gap-1 px-3 py-2 border-b border-default overflow-x-auto bg-canvas">
+    <div className="flex items-center gap-1 px-3 py-2 border-b border-[#2a2e3d] overflow-x-auto bg-[#0f1117]">
       {list.length === 0 ? (
-        <div className="text-xs text-muted">
+        <div className="text-xs text-[#94a3b8]">
           {t("workspacePage.noPredictionsYet")}
         </div>
       ) : (
@@ -48,8 +48,8 @@ export default function ResultTabs({
               className={
                 "flex items-center gap-2 px-3 py-1 rounded-t-md text-xs whitespace-nowrap " +
                 (isActive
-                  ? "bg-surface text-primary border-b-2 border-info"
-                  : "text-muted hover:text-primary hover:bg-surface")
+                  ? "bg-[#1a1d27] text-[#e2e8f0] border-b-2 border-info"
+                  : "text-[#94a3b8] hover:text-[#e2e8f0] hover:bg-[#1a1d27]")
               }
             >
               <span className="font-mono">{shortKey(r.processor_key)}</span>
@@ -63,7 +63,7 @@ export default function ResultTabs({
             type="button"
             onClick={onRunPredict}
             disabled={predicting}
-            className="px-2 py-1 text-xs rounded bg-info hover:bg-accent-hover disabled:opacity-50 text-white"
+            className="px-2 py-1 text-xs rounded bg-[#3b82f6] hover:bg-[#818cf8] disabled:opacity-50 text-white"
           >
             {predicting ? t("workspacePage.predicting") : t("workspacePage.runPrediction")}
           </button>

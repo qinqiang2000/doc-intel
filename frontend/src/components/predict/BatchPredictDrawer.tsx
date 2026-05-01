@@ -11,8 +11,8 @@ export default function BatchPredictDrawer({ onClose }: Props) {
   if (!progress) return null;
 
   return (
-    <aside className="fixed top-0 right-0 h-full w-96 bg-surface border-l border-default shadow-xl z-40 flex flex-col">
-      <header className="px-4 py-3 border-b border-default">
+    <aside className="fixed top-0 right-0 h-full w-96 bg-[#1a1d27] border-l border-[#2a2e3d] shadow-xl z-40 flex flex-col">
+      <header className="px-4 py-3 border-b border-[#2a2e3d]">
         <h2 className="font-semibold text-sm">
           {t("documents.batchPredictTitle", {
             done: progress.events.length,
@@ -27,10 +27,10 @@ export default function BatchPredictDrawer({ onClose }: Props) {
             key={`${e.document_id}-${idx}`}
             className={
               e.status === "completed"
-                ? "text-success"
+                ? "text-[#22c55e]"
                 : e.status === "failed"
-                ? "text-danger"
-                : "text-muted"
+                ? "text-[#ef4444]"
+                : "text-[#94a3b8]"
             }
           >
             {e.status === "completed" ? "✓" : e.status === "failed" ? "✗" : "⋯"}{" "}
@@ -41,21 +41,21 @@ export default function BatchPredictDrawer({ onClose }: Props) {
       </ul>
 
       {progress.done && (
-        <div className="px-4 py-2 border-t border-default text-xs">
-          <span className="text-success">
+        <div className="px-4 py-2 border-t border-[#2a2e3d] text-xs">
+          <span className="text-[#22c55e]">
             {t("documents.batchSucceeded", { count: progress.succeeded })}
           </span>
           {" · "}
-          <span className="text-danger">
+          <span className="text-[#ef4444]">
             {t("documents.batchFailed", { count: progress.failed })}
           </span>
         </div>
       )}
 
-      <footer className="px-4 py-3 border-t border-default flex justify-end">
+      <footer className="px-4 py-3 border-t border-[#2a2e3d] flex justify-end">
         <button
           type="button" onClick={onClose}
-          className="text-sm text-muted hover:text-primary"
+          className="text-sm text-[#94a3b8] hover:text-[#e2e8f0]"
         >
           {progress.done ? t("common.done") : t("common.close")}
         </button>

@@ -140,10 +140,10 @@ export default function AnnotationEditor({
             ref={isSelected ? selectedRowRef : null}
             onClick={() => setSelectedAnnotationId(a.id)}
             className={`flex items-center gap-2 text-sm rounded px-1 py-0.5 cursor-pointer ${
-              isSelected ? "border-2 border-accent bg-surface" : "border-2 border-transparent"
+              isSelected ? "border-2 border-[#6366f1] bg-[#1a1d27]" : "border-2 border-transparent"
             }`}
           >
-            <span className="text-xs text-muted w-32 truncate" title={a.field_name}>
+            <span className="text-xs text-[#94a3b8] w-32 truncate" title={a.field_name}>
               {a.field_name}
             </span>
             <input
@@ -151,7 +151,7 @@ export default function AnnotationEditor({
               defaultValue={a.field_value ?? ""}
               onBlur={(e) => void handleBlur(a, e.target.value)}
               onClick={(e) => e.stopPropagation()}
-              className="flex-1 bg-surface-input border border-default rounded px-2 py-1 text-sm focus:border-accent outline-none"
+              className="flex-1 bg-[#0f1117] border border-[#2a2e3d] rounded px-2 py-1 text-sm focus:border-[#6366f1] outline-none"
             />
             <span className="text-xs">
               {a.source === "ai_detected" ? "🤖" : "✏️"}
@@ -164,7 +164,7 @@ export default function AnnotationEditor({
               }}
               aria-label={t("workspacePage.deleteAriaLabel")}
               title={t("common.delete")}
-              className="text-muted hover:text-danger transition-colors p-1"
+              className="text-[#94a3b8] hover:text-[#ef4444] transition-colors p-1"
             >
               <svg
                 width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -184,26 +184,26 @@ export default function AnnotationEditor({
       })}
 
       {adding ? (
-        <div className="bg-surface-input border border-default rounded p-2 space-y-2">
+        <div className="bg-[#0f1117] border border-[#2a2e3d] rounded p-2 space-y-2">
           <label className="block text-xs">
             {t("workspacePage.fieldName")}
             <input
               value={newName} onChange={(e) => setNewName(e.target.value)}
-              className="ml-2 bg-surface border border-default rounded px-2 py-0.5 text-sm"
+              className="ml-2 bg-[#1a1d27] border border-[#2a2e3d] rounded px-2 py-0.5 text-sm"
             />
           </label>
           <label className="block text-xs">
             {t("workspacePage.value")}
             <input
               value={newValue} onChange={(e) => setNewValue(e.target.value)}
-              className="ml-2 bg-surface border border-default rounded px-2 py-0.5 text-sm"
+              className="ml-2 bg-[#1a1d27] border border-[#2a2e3d] rounded px-2 py-0.5 text-sm"
             />
           </label>
           <label className="block text-xs">
             {t("workspacePage.fieldType")}
             <select
               value={newType} onChange={(e) => setNewType(e.target.value)}
-              className="ml-2 bg-surface border border-default rounded px-2 py-0.5 text-sm"
+              className="ml-2 bg-[#1a1d27] border border-[#2a2e3d] rounded px-2 py-0.5 text-sm"
             >
               <option value="string">string</option>
               <option value="number">number</option>
@@ -214,13 +214,13 @@ export default function AnnotationEditor({
           <div className="flex gap-2">
             <button
               type="button" onClick={() => void handleAdd()}
-              className="bg-accent text-white text-xs px-3 py-1 rounded"
+              className="bg-[#6366f1] text-white text-xs px-3 py-1 rounded"
             >
               {t("common.save")}
             </button>
             <button
               type="button" onClick={() => setAdding(false)}
-              className="text-xs text-muted"
+              className="text-xs text-[#94a3b8]"
             >
               {t("common.cancel")}
             </button>
@@ -229,13 +229,13 @@ export default function AnnotationEditor({
       ) : (
         <button
           type="button" onClick={() => setAdding(true)}
-          className="text-xs text-accent hover:underline"
+          className="text-xs text-[#6366f1] hover:underline"
         >
           {t("workspacePage.addField")}
         </button>
       )}
 
-      {error && <div className="text-xs text-danger">{error}</div>}
+      {error && <div className="text-xs text-[#ef4444]">{error}</div>}
     </div>
   );
 }

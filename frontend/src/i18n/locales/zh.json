@@ -236,10 +236,6 @@
   "appShell": {
     "logout": "退出",
     "settings": "设置",
-    "language": "语言",
-    "theme": "主题",
-    "themeSystem": "跟随系统",
-    "themeDark": "深色",
-    "themeLight": "浅色"
+    "language": "语言"
   }
 }

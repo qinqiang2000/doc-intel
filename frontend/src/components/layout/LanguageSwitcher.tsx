@@ -29,7 +29,7 @@ export default function LanguageSwitcher() {
         onClick={() => setOpen((o) => !o)}
         title={t("appShell.language")}
         aria-label={t("appShell.language")}
-        className="text-sm text-muted hover:text-primary px-2 py-1 rounded hover:bg-surface-hover"
+        className="text-sm text-[#94a3b8] hover:text-[#e2e8f0] px-2 py-1 rounded hover:bg-[#232736]"
       >
         🌐 <span className="hidden md:inline">{LABELS[current]}</span>
       </button>
@@ -40,14 +40,14 @@ export default function LanguageSwitcher() {
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute right-0 mt-1 w-32 bg-surface border border-default rounded shadow-lg z-50 py-1">
+          <div className="absolute right-0 mt-1 w-32 bg-[#1a1d27] border border-[#2a2e3d] rounded shadow-lg z-50 py-1">
             {(["zh", "en"] as SupportedLang[]).map((l) => (
               <button
                 key={l}
                 type="button"
                 onClick={() => pick(l)}
-                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-hover ${
-                  current === l ? "text-accent" : "text-primary"
+                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-[#232736] ${
+                  current === l ? "text-[#6366f1]" : "text-[#e2e8f0]"
                 }`}
               >
                 {LABELS[l]}

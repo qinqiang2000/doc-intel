@@ -17,15 +17,15 @@ export default function StepIndicator() {
   const setCorrectionConsoleOpen = usePredictStore((s) => s.setCorrectionConsoleOpen);
 
   return (
-    <div className="bg-canvas border-b border-default px-4 py-2 flex items-center gap-1 text-xs">
+    <div className="bg-[#0f1117] border-b border-[#2a2e3d] px-4 py-2 flex items-center gap-1 text-xs">
       {STEP_KEYS.map((s) => {
         const isCurrent = s.id === currentStep;
         const isCompleted = s.id < currentStep;
         const cls = isCurrent
-          ? "border border-accent text-accent-hover font-semibold"
+          ? "border border-[#6366f1] text-[#818cf8] font-semibold"
           : isCompleted
-          ? "bg-accent-strong text-white"
-          : "bg-surface text-muted";
+          ? "bg-[#312e81] text-white"
+          : "bg-[#1a1d27] text-[#94a3b8]";
         return (
           <button
             key={s.id}
@@ -35,7 +35,7 @@ export default function StepIndicator() {
               setStep(s.id);
               if (s.id === 4) setCorrectionConsoleOpen(true);
             }}
-            className={`${cls} px-3 py-1 rounded hover:border-accent-hover hover:border`}
+            className={`${cls} px-3 py-1 rounded hover:border-[#818cf8] hover:border`}
           >
             {s.id + 1}. {t(s.key)}
           </button>

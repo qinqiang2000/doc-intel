@@ -5,7 +5,6 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import './index.css'
 import './i18n'
-import './stores/theme-store'
 import App from './App.tsx'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(

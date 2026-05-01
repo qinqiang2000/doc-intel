@@ -171,8 +171,8 @@ describe("AnnotationEditor", () => {
     );
     const row1 = screen.getByText("field-1").closest("[data-row-id]") as HTMLElement;
     const row2 = screen.getByText("field-2").closest("[data-row-id]") as HTMLElement;
-    expect(row1.className).not.toMatch(/border-accent/);
-    expect(row2.className).toMatch(/border-accent/);
+    expect(row1.className).not.toMatch(/border-\[#6366f1\]/);
+    expect(row2.className).toMatch(/border-\[#6366f1\]/);
   });
 
   it("clicking a row body sets selectedAnnotationId in store", async () => {

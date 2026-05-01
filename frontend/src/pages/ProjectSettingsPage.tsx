@@ -51,12 +51,12 @@ export default function ProjectSettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- effect intentionally keyed on ws.id/pid only; ws object reference changes are irrelevant
   }, [ws?.id, pid]);
 
-  if (!ws) return <div className="text-muted">{t("workspace.notFound")}</div>;
+  if (!ws) return <div className="text-[#94a3b8]">{t("workspace.notFound")}</div>;
   if (ws.role !== "owner") {
-    return <div className="text-danger">{t("project.ownerOnly")}</div>;
+    return <div className="text-[#ef4444]">{t("project.ownerOnly")}</div>;
   }
-  if (error && !project) return <div className="text-danger">{error}</div>;
-  if (!project) return <div className="text-muted">{t("common.loading")}</div>;
+  if (error && !project) return <div className="text-[#ef4444]">{error}</div>;
+  if (!project) return <div className="text-[#94a3b8]">{t("common.loading")}</div>;
 
   async function onSave(e: FormEvent) {
     e.preventDefault();
@@ -92,10 +92,10 @@ export default function ProjectSettingsPage() {
         {t("project.settingsHeader", { name: project.name })}
       </h1>
 
-      <form onSubmit={onSave} className="bg-surface border border-default rounded p-4 mb-4">
+      <form onSubmit={onSave} className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-4 mb-4">
         <h2 className="text-sm font-semibold mb-3">{t("project.basicInfo")}</h2>
 
-        <label htmlFor="ps-name" className="block text-xs text-muted mb-1">
+        <label htmlFor="ps-name" className="block text-xs text-[#94a3b8] mb-1">
           {t("common.name")}
         </label>
         <input
@@ -105,10 +105,10 @@ export default function ProjectSettingsPage() {
           maxLength={120}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-surface-input border border-default rounded px-3 py-2 mb-3 text-sm"
+          className="w-full bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 mb-3 text-sm"
         />
 
-        <label htmlFor="ps-desc" className="block text-xs text-muted mb-1">
+        <label htmlFor="ps-desc" className="block text-xs text-[#94a3b8] mb-1">
           {t("common.description")}
         </label>
         <textarea
@@ -116,43 +116,43 @@ export default function ProjectSettingsPage() {
           maxLength={500}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full bg-surface-input border border-default rounded px-3 py-2 mb-3 text-sm h-20"
+          className="w-full bg-[#0f1117] border border-[#2a2e3d] rounded px-3 py-2 mb-3 text-sm h-20"
         />
 
         <button
           type="submit"
           disabled={saving}
-          className="bg-accent hover:bg-accent-hover text-white font-semibold px-4 py-2 rounded text-sm disabled:opacity-50"
+          className="bg-[#6366f1] hover:bg-[#818cf8] text-white font-semibold px-4 py-2 rounded text-sm disabled:opacity-50"
         >
           {saving ? t("common.saving") : t("common.save")}
         </button>
       </form>
 
       {project.template && (
-        <section className="bg-surface border border-default rounded p-4 mb-4">
+        <section className="bg-[#1a1d27] border border-[#2a2e3d] rounded p-4 mb-4">
           <h2 className="text-sm font-semibold mb-2">{t("project.templateReadOnly")}</h2>
           <div className="text-sm">
             {project.template.display_name}
-            <span className="text-xs text-subtle ml-2">
+            <span className="text-xs text-[#64748b] ml-2">
               · {t("project.templateFieldsCount", { count: project.template.expected_fields.length })}
             </span>
           </div>
-          <div className="text-xs text-muted mt-1">{project.template.description}</div>
+          <div className="text-xs text-[#94a3b8] mt-1">{project.template.description}</div>
         </section>
       )}
 
-      <section className="bg-surface border border-danger rounded p-4">
-        <h2 className="text-sm font-semibold mb-2 text-danger">{t("common.dangerZone")}</h2>
+      <section className="bg-[#1a1d27] border border-danger rounded p-4">
+        <h2 className="text-sm font-semibold mb-2 text-[#ef4444]">{t("common.dangerZone")}</h2>
         <button
           type="button"
           onClick={() => void onDelete()}
-          className="bg-danger hover:bg-danger-hover text-white font-semibold px-4 py-2 rounded text-sm"
+          className="bg-[#ef4444] hover:bg-[#dc2626] text-white font-semibold px-4 py-2 rounded text-sm"
         >
           {t("project.deleteProject")}
         </button>
       </section>
 
-      {error && <div className="text-danger text-xs mt-3">{error}</div>}
+      {error && <div className="text-[#ef4444] text-xs mt-3">{error}</div>}
     </div>
   );
 }
